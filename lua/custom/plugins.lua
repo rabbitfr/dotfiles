@@ -4,6 +4,10 @@ local overrides = require("custom.configs.overrides")
 local plugins = {
 
   -- Override plugin definition options
+  {
+     "christoomey/vim-tmux-navigator",
+     lazy = false,
+  },
 
   {
     "neovim/nvim-lspconfig",
@@ -46,6 +50,12 @@ local plugins = {
       require("better_escape").setup()
     end,
   },
+
+  {
+     "christoomey/vim-tmux-navigator",
+     lazy = false,
+  },
+
 
   -- To make a plugin not be loaded
   -- {

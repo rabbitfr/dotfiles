@@ -1,6 +1,7 @@
 return {
   defaults = { lazy = true },
   install = { colorscheme = { "nvchad" } },
+  -- change_detection = { notify = false, },
 
   ui = {
     icons = {
@@ -18,7 +19,7 @@ return {
         "tohtml",
         "getscript",
         "getscriptPlugin",
-        "gzip",
+        -- "gzip",
         "logipat",
         "netrw",
         "netrwPlugin",
