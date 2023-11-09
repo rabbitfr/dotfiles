@@ -42,7 +42,7 @@ local plugins = {
 		opts = overrides.nvimtree,
 	},
 
-	-- Install a plugin
+	-- use jk or kj to exit insert mode, this plugin make it faster
 	{
 		"max397574/better-escape.nvim",
 		event = "InsertEnter",
@@ -63,6 +63,10 @@ local plugins = {
 		dependencies = {
 			"nvim-lua/plenary.nvim",
 		},
+	},
+
+	{
+		"szw/vim-maximizer",
 	},
 
 	-- To make a plugin not be loaded
