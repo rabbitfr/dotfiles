@@ -36,7 +36,11 @@ M.general = {
 		["<leader>n"] = { "<cmd> set nu! <CR>", "Toggle line number" },
 		["<leader>rn"] = { "<cmd> set rnu! <CR>", "Toggle relative number" },
 
-		-- Allow moving the cursor through wrapped lines with j, k, <Up> and <Down>
+    -- increment/decrement numbers
+		["<leader>+"] = { "<C-a>", "Increment number" },
+		["<leader>-"] = { "<C-x>", "Decrement number" },
+
+    -- Allow moving the cursor through wrapped lines with j, k, <Up> and <Down>
 		-- http://www.reddit.com/r/vim/comments/2k4cbr/problem_with_gj_and_gk/
 		-- empty mode is same as using <cmd> :map
 		-- also don't use g[j|k] when in operator pending mode, so it doesn't alter d, y or c behaviour
