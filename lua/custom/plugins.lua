@@ -70,6 +70,20 @@ local plugins = {
 		lazy = false,
 	},
 
+	{
+		"ahmedkhalf/project.nvim",
+		lazy = false,
+		config = function()
+			require("project_nvim").setup({
+				manual_mode = false,
+				detection_methods = { "lsp", "pattern" },
+				patterns = { ".git", ".svn", "pom.xml", "gradlew", "mvnw" ,"Makefile", "package.json" },
+			})
+		end,
+		--   config = function()
+		-- 	require("project").setup()
+		-- end,
+	},
 	-- To make a plugin not be loaded
 	-- {
 	--   "NvChad/nvim-colorizer.lua",
