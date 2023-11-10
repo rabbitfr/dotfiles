@@ -80,11 +80,15 @@ local plugins = {
 				patterns = { ".git", ".svn", "pom.xml", "gradlew", "mvnw" ,"Makefile", "package.json" },
 			})
 		end,
-		--   config = function()
-		-- 	require("project").setup()
-		-- end,
 	},
-	-- To make a plugin not be loaded
+
+	{
+		"tpope/vim-fugitive",
+		lazy = false,
+	},
+
+
+  -- To make a plugin not be loaded
 	-- {
 	--   "NvChad/nvim-colorizer.lua",
 	--   enabled = false
