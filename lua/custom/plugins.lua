@@ -67,6 +67,7 @@ local plugins = {
 
 	{
 		"szw/vim-maximizer",
+		lazy = false,
 	},
 
 	-- To make a plugin not be loaded

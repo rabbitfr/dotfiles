@@ -12,6 +12,12 @@ M.treesitter = {
     "c",
     "markdown",
     "markdown_inline",
+    "gitcommit",
+    "gitignore",
+    "diff",
+    "git_rebase",
+    "git_config",
+    "bash",
   },
   indent = {
     enable = true,
