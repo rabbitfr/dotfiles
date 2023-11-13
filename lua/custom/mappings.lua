@@ -18,8 +18,11 @@ M.general = {
 		["<leader>tp"] = { "<cmd>tabp<CR>", "Go to previous tab" },
 		["<leader>tf"] = { "<cmd>tabnew %<CR>", "Open current buffer in new tab" },
 
-    -- maximize split 
+		-- maximize split
 		["<leader>sm"] = { "<cmd>MaximizerToggle<CR>", "Maximize/minimize a split" },
+
+		-- projects
+		["<leader>fp"] = { "<cmd>Telescope projects<CR>", "Open Projects" },
 	},
 
 	v = {
