@@ -1,34 +1,32 @@
 #Requires AutoHotkey v2.0
+;MyGui := Gui()
+;MyGui.Opt("+LastFound")
+;#SingleInstance force
 
-snap5(start,stop) {
+global zoneX := [-2, 635, 1275, 1915 ]
+global zoneY := [ 44, 822 ]
+global zoneWidth := [ 647, 650, 650 , 647 ]
+global zoneHeight:= [ 780, 780, 780 , 780 ]
+
+;global areaWidth  := 2560
+;global areaHeight := 1600
+`
+SLEEP_VALUE := 5
+
+snapToZone(start,stop) {
+;    SetWinDelay 1`
+
     window := WinGetId("A")
 
-    currentZone := getZone(window)
+    getArea(&currentZone, window)
 
     if ( currentZone == start "" stop ) {
         return
     }
 
-     WinSetTransparent 0,window
+;    WinSetTransparent 0,window
 
-    ;    SetWinDelay 5
-    ; move on zone 1
-    WinMove -2,44,647,780,window
-
-    ; reset state and snap to zone 1
-;     x := -2
-;     y := 44
-;     width := 647
-;     height := 780
-;     WinMove x,y,width,height, window
-     PostMessage 0x112, 0xF010,,,window
-     SendEvent "^{Down}{Enter}"
-;     sleep 10
-
-     right()
-     left()
-
-
+    reset(window)
 
     ; ┌───────┐
     ; │1 3 5 7│
@@ -90,10 +88,64 @@ snap5(start,stop) {
     }
 
 ;    sleep 10
-    WinSetTransparent 255,window
+;    WinSetTransparent 255,window
 }
 
-right(repeat := 1) {
+reset(window) {
+    WinMove -2,44,647,780, window
+    SendInput "!{Space}m"
+    SendEvent "^{Down}{Enter}"
+    right()
+    left()
+}
+
+getArea(&area, window) {
+    WinGetPos &x, &y, &width, &height, window
+
+    switch x {
+        case -2   : colStart := 1
+        case 635  : colStart := 2
+        case 1275 : colStart := 3
+        case 1915 : colStart := 4
+    }
+
+    switch x+width {
+        case 645   : colStop := 1
+        case 1285  : colStop := 2
+        case 1925  : colStop := 3
+        case 2562 :  colStop := 4
+     }
+
+    switch y {
+        case 44   : rowStart := 1
+        case 822  : rowStart := 2
+    }
+
+    switch y+height {
+        case 824  : rowStop := 1
+        case 1602 : rowStop := 2
+    }
+
+    getZone(colStart, rowStart, &startZone)
+    getZone(colStop , rowStop,  &endZone)
+
+    area := startZone "" endZone
+}
+
+getZone(col, row, &zone) {
+    switch col "" row {
+        case 11 : zone := 1
+        case 12 : zone := 2
+        case 21 : zone := 3
+        case 22 : zone := 4
+        case 31 : zone := 5
+        case 32 : zone := 6
+        case 41 : zone := 7
+        case 42 : zone := 8
+    }
+}
+
+right(repeat := 1) {w
     SendInput "#{right " repeat "}"
 ;    sleep 10
 }

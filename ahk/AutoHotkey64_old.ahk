@@ -23,7 +23,7 @@ snapToZone(targetStart,targetStop) {
 
     currentStart := SubStr(currentZone, 1, 1)
     currentStop  := SubStr(currentZone, 2, 1)
-45
+
     toGrid(&currentStartCol,&currentStartRow,currentStart)
     toGrid(&currentStopCol, &currentStopRow, currentStop)
 
@@ -33,11 +33,11 @@ snapToZone(targetStart,targetStop) {
 
 ;    window := WinGetId("A")
 
-;    MsgBox "current : start " currentStart " (" currentStartCol "," currentStartRow ")`tend  " currentStop " (" currentStopCol "," currentStopRow ")`n"
-;         . "target  : start " targetStart " (" targetStartCol "," targetStartRow ")`tend  " targetStop " (" targetStopCol "," targetStopRow ")`n"
-;         . "shrinkY : " (currentStopRow-currentStartRow) "`n"
-;         . "shrinkX : " (currentStopCol-currentStartCol) "`n"
-;         . "left    : " (currentStartCol - 1)
+    MsgBox "current : start " currentStart " (" currentStartCol "," currentStartRow ")`tend  " currentStop " (" currentStopCol "," currentStopRow ")`n"
+         . "target  : start " targetStart " (" targetStartCol "," targetStartRow ")`tend  " targetStop " (" targetStopCol "," targetStopRow ")`n"
+         . "shrinkY : " (currentStopRow-currentStartRow) "`n"
+         . "shrinkX : " (currentStopCol-currentStartCol) "`n"
+         . "left    : " (currentStartCol - 1)
 
 
      ; reset to area 11
@@ -371,13 +371,3 @@ shrinkY(repeat := 1) {
 #numpad7::snapToZone(1,1)
 #numpad8::snapToZone(3,5)
 #numpad9::snapToZone(7,7)
-
-#!numpad1::snapToZone(2,4)
-#!numpad2::snapToZone(2,8)
-#!numpad3::snapToZone(6,8)
-#!numpad4::snapToZone(1,4)
-#!numpad5::snapToZone(1,8)
-#!numpad6::snapToZone(5,8)
-#!numpad7::snapToZone(1,3)
-#!numpad8::snapToZone(1,7)
-#!numpad9::snapToZone(5,7)
