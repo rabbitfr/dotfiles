@@ -23,7 +23,7 @@ SLEEP_VALUE := 5
 
 setup() {
     MonitorGetWorkArea(1, &wLeft, &wTop, &wRight, &wBottom)
-    print "Workarea   " wLeft " " wTop " " wRight " " wBottom
+    ; print "Workarea   " wLeft " " wTop " " wRight " " wBottom
     ; MonitorGet(1, &Left, &Top, &Right, &Bottom)
     ; FileAppend "Boundaries " Left " " Top " " Right " " Bottom, "*"
     print "w    " (wRight - (5 * spacing)) // 4
@@ -53,7 +53,7 @@ getArea(&area, window) {
 
     for col, pos in zoneX {
         ; print " " x + width " >=  " (pos + zoneWidth[col]) - threshold  " and " x + width " <= " (pos + +zoneWidth[col]) + threshold
-        if (x + width  >= (pos + zoneWidth[col]) - threshold and x + width  <= (pos + +zoneWidth[col]) + threshold) {
+        if (x + width >= (pos + zoneWidth[col]) - threshold and x + width <= (pos + +zoneWidth[col]) + threshold) {
             colStop := col
             break
         }
@@ -61,32 +61,32 @@ getArea(&area, window) {
 
     for row, pos in zoneY {
         ; print "  " y " >=  " zoneY[row] - threshold " and " y " <= " zoneY[row] + threshold
-        if ( y  >= pos - threshold and y <= pos + threshold ) {
+        if (y >= pos - threshold and y <= pos + threshold) {
             rowStart := row
             break
-        } 
+        }
     }
 
     for row, pos in zoneY {
         print "  " y + height " >=  " zoneY[row] - threshold " and " y + height " <= " zoneY[row] + threshold
-        if ( y + height  >= ( pos + zoneHeight[row] )- threshold and y + height <= (pos + zoneHeight[row] ) + threshold ) {
+        if (y + height >= (pos + zoneHeight[row]) - threshold and y + height <= (pos + zoneHeight[row]) + threshold) {
             rowStop := row
             break
-        } 
+        }
     }
-        
+
     ; print "x " x " y " y " w " width " h " height
     ; print "colStart " colStart
     ; print "rowStart " rowStart
     ; print "colStop " colStop
     ; print "rowStop " rowStop
 
-    if ( colStart != -1 and rowStart != -1 and colStop != -1 and rowStop != -1) {
+    if (colStart != -1 and rowStart != -1 and colStop != -1 and rowStop != -1) {
         getZone(colStart, rowStart, &startZone)
         getZone(colStop, rowStop, &endZone)
-        area := startZone " " endZone
+        area := startZone "" endZone
     }
-    
+
     ; switch x {
     ;     case -2: colStart := 1
     ;     case 635: colStart := 2
@@ -162,14 +162,46 @@ toGrid(&col, &row, zone) {
 
 snapToZone(targetStart, targetStop) {
 
-    setup()
+    ; setup()
 
     window := WinGetId("A")
 
     getArea(&currentZone, window)
 
     if (currentZone == targetStart "" targetStop) {
-        return
+        ; switch to next mode zone
+        switch targetStart "" targetStop {
+            case 22:
+                targetStart := 2
+                targetStop := 4
+            case 46:
+                targetStart := 2
+                targetStop := 8
+            case 88:
+                targetStart := 6
+                targetStop := 8
+            case 12:
+                targetStart := 1
+                targetStop := 4
+            case 36:
+                targetStart := 1
+                targetStop := 8
+            case 78:
+                targetStart := 5
+                targetStop := 8
+            case 11:
+                targetStart := 1
+                targetStop := 3
+            case 35:
+                targetStart := 1
+                targetStop := 7
+            case 77:
+                targetStart := 5
+                targetStop := 7
+        }
+        print "switched to mode #! zone " targetStart "" targetStop
+    } else {
+        print "current : " currentZone "`tnext : "  targetStart "" targetStop
     }
 
 
