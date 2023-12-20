@@ -4,24 +4,167 @@ SendMode "Input"
 SetWorkingDir A_ScriptDir
 KeyHistory 0
 #WinActivateForce
+#ErrorStdOut
 
 
 global zoneX := [-2, 635, 1275, 1915]
 global zoneY := [44, 822]
 global zoneWidth := [647, 650, 650, 647]
 global zoneHeight := [780, 780, 780, 780]
+; global zoneHeight := [760, 760, 760, 760]
+
 global zoneCenter := [322, 960, 650, 647]
+global spacing := 0
 
 ;global areaWidth  := 2560
 ;global areaHeight := 1600
 
 SLEEP_VALUE := 5
 
+setup() {
+    MonitorGetWorkArea(1, &wLeft, &wTop, &wRight, &wBottom)
+    print "Workarea   " wLeft " " wTop " " wRight " " wBottom
+    ; MonitorGet(1, &Left, &Top, &Right, &Bottom)
+    ; FileAppend "Boundaries " Left " " Top " " Right " " Bottom, "*"
+    print "w    " (wRight - (5 * spacing)) // 4
+    print "h   " ((wBottom - wTop) - (3 * spacing)) // 2
+}
+
+print(message) {
+    FileAppend message "`n", "*"
+}
+
+threshold := 150
+
+getArea(&area, window) {
+    WinGetPos &x, &y, &width, &height, window
+
+    colStart := -1
+    colStop := -1
+    rowStart := -1
+    rowStop := -1
+    area := -1
+
+    for col, pos in zoneX
+        if (x >= pos - threshold and x <= pos + threshold) {
+            colStart := col
+            break
+        }
+
+    for col, pos in zoneX {
+        ; print " " x + width " >=  " (pos + zoneWidth[col]) - threshold  " and " x + width " <= " (pos + +zoneWidth[col]) + threshold
+        if (x + width  >= (pos + zoneWidth[col]) - threshold and x + width  <= (pos + +zoneWidth[col]) + threshold) {
+            colStop := col
+            break
+        }
+    }
+
+    for row, pos in zoneY {
+        ; print "  " y " >=  " zoneY[row] - threshold " and " y " <= " zoneY[row] + threshold
+        if ( y  >= pos - threshold and y <= pos + threshold ) {
+            rowStart := row
+            break
+        } 
+    }
+
+    for row, pos in zoneY {
+        print "  " y + height " >=  " zoneY[row] - threshold " and " y + height " <= " zoneY[row] + threshold
+        if ( y + height  >= ( pos + zoneHeight[row] )- threshold and y + height <= (pos + zoneHeight[row] ) + threshold ) {
+            rowStop := row
+            break
+        } 
+    }
+        
+    ; print "x " x " y " y " w " width " h " height
+    ; print "colStart " colStart
+    ; print "rowStart " rowStart
+    ; print "colStop " colStop
+    ; print "rowStop " rowStop
+
+    if ( colStart != -1 and rowStart != -1 and colStop != -1 and rowStop != -1) {
+        getZone(colStart, rowStart, &startZone)
+        getZone(colStop, rowStop, &endZone)
+        area := startZone " " endZone
+    }
+    
+    ; switch x {
+    ;     case -2: colStart := 1
+    ;     case 635: colStart := 2
+    ;     case 1275: colStart := 3
+    ;     case 1915: colStart := 4
+    ;     default: MsgBox x
+    ; }
+
+    ; switch x + width {
+    ;     case 645: coltSop := 1
+    ;     case 1285: colStop := 2
+    ;     case 1925: colStop := 3
+    ;     case 2562: colStop := 4
+    ; }
+
+    ; switch y {
+    ;     case 44: rowStart := 1
+    ;     case 822: rowStart := 2
+    ; }
+
+    ; switch y + height {
+    ;     case 824: rowStop := 1
+    ;     case 1602: rowStop := 2
+    ; }
+
+    ; getZone(colStart, rowStart, &startZone)
+    ; getZone(colStop, rowStop, &endZone)
+
+    ; area := startZone "" endZone
+}
+
+getZone(col, row, &zone) {
+    switch col "" row {
+        case 11: zone := 1
+        case 12: zone := 2
+        case 21: zone := 3
+        case 22: zone := 4
+        case 31: zone := 5
+        case 32: zone := 6
+        case 41: zone := 7
+        case 42: zone := 8
+    }
+}
+
+toGrid(&col, &row, zone) {
+    switch zone {
+        case 1:
+            col := 1
+            row := 1
+        case 2:
+            col := 1
+            row := 2
+        case 3:
+            col := 2
+            row := 1
+        case 4:
+            col := 2
+            row := 2
+        case 5:
+            col := 3
+            row := 1
+        case 6:
+            col := 3
+            row := 2
+        case 7:
+            col := 4
+            row := 1
+        case 8:
+            col := 4
+            row := 2
+    }
+}
+
 snapToZone(targetStart, targetStop) {
 
-    window := WinGetId("A")
+    setup()
 
-    SetWinDelay 5
+    window := WinGetId("A")
 
     getArea(&currentZone, window)
 
@@ -29,15 +172,24 @@ snapToZone(targetStart, targetStop) {
         return
     }
 
-    currentStart := SubStr(currentZone, 1, 1)
-    currentStop := SubStr(currentZone, 2, 1)
 
-    toGrid(&currentStartCol, &currentStartRow, currentStart)
-    toGrid(&currentStopCol, &currentStopRow, currentStop)
+    ; currentStart := SubStr(currentZone, 1, 1)
+    ; currentStop := SubStr(currentZone, 2, 1)
+
+    ; toGrid(&currentStartCol, &currentStartRow, currentStart)
+    ; toGrid(&currentStopCol, &currentStopRow, currentStop)
 
     toGrid(&targetStartCol, &targetStartRow, targetStart)
     toGrid(&targetStopCol, &targetStopRow, targetStop)
 
+    ; targetArea
+    x := zoneX[targetStartCol]
+    y := zoneY[targetStartRow]
+    w := zoneX[targetStopCol] - zoneX[targetStartCol] + zoneWidth[targetStopCol]
+    h := zoneY[targetStopRow] - zoneY[targetStartRow] + zoneHeight[targetStopRow]
+
+    print "x " x " y " y " w " w " h " h
+    WinMove x, y, w, h, window
 
     ;    window := WinGetId("A")
 
@@ -229,82 +381,6 @@ reset(window) {
 
     Send "#{Right}"
     ;    left()
-}
-
-getArea(&area, window) {
-    WinGetPos &x, &y, &width, &height, window
-
-    switch x {
-        case -2: colStart := 1
-        case 635: colStart := 2
-        case 1275: colStart := 3
-        case 1915: colStart := 4
-        default: MsgBox x
-    }
-
-    switch x + width {
-        case 645: colStop := 1
-        case 1285: colStop := 2
-        case 1925: colStop := 3
-        case 2562: colStop := 4
-    }
-
-    switch y {
-        case 44: rowStart := 1
-        case 822: rowStart := 2
-    }
-
-    switch y + height {
-        case 824: rowStop := 1
-        case 1602: rowStop := 2
-    }
-
-    getZone(colStart, rowStart, &startZone)
-    getZone(colStop, rowStop, &endZone)
-
-    area := startZone "" endZone
-}
-
-getZone(col, row, &zone) {
-    switch col "" row {
-        case 11: zone := 1
-        case 12: zone := 2
-        case 21: zone := 3
-        case 22: zone := 4
-        case 31: zone := 5
-        case 32: zone := 6
-        case 41: zone := 7
-        case 42: zone := 8
-    }
-}
-
-toGrid(&col, &row, zone) {
-    switch zone {
-        case 1:
-            col := 1
-            row := 1
-        case 2:
-            col := 1
-            row := 2
-        case 3:
-            col := 2
-            row := 1
-        case 4:
-            col := 2
-            row := 2
-        case 5:
-            col := 3
-            row := 1
-        case 6:
-            col := 3
-            row := 2
-        case 7:
-            col := 4
-            row := 1
-        case 8:
-            col := 4
-            row := 2
-    }
 }
 
 
