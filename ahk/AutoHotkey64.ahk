@@ -1,268 +1,325 @@
-﻿#SingleInstance force
+﻿#Requires AutoHotkey v2.0
+#SingleInstance Force
+#WinActivateForce
+#ErrorStdOut
+
 ListLines 0
 SendMode "Input"
 SetWorkingDir A_ScriptDir
 KeyHistory 0
-#WinActivateForce
-
+DetectHiddenWindows true
 
 global zoneX := [-2, 635, 1275, 1915]
 global zoneY := [44, 822]
 global zoneWidth := [647, 650, 650, 647]
 global zoneHeight := [780, 780, 780, 780]
 global zoneCenter := [322, 960, 650, 647]
+global spacing := 0
+global lastActionWindow := 0
 
-;global areaWidth  := 2560
-;global areaHeight := 1600
+global lastPromotedWindow := -1
+global lastPromotedWindowZone := -1
 
-SLEEP_VALUE := 5
+global lastPositiodnById := 0 ; @TODO
+global lastPositionByProcess := 0 ; @TODO
+
+global threshold := 150
+global areaWidth := 2560
+global areaHeight := 1600
+
+myGui := Gui()
+myGui.Opt("+LastFound")
+hWnd := WinExist()
+DllCall("RegisterShellHookWindow", "UInt", hWnd)
+MsgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
+OnMessage(MsgNum, ShellMessage)
+Persistent ; This script will not exit automatically, even though it has nothing to do.
+
+ShellMessage(wParam, lParam, msg, hwnd) {
+    ; print "event " wParam " " lParam " " msg " " hwnd
+    if (wParam = 32772) {
+        SetTimer(DrawActive, -1)
+    }
+}
+
+; However, you can use its tray icon to open the script in an editor, or to
+; launch Window Spy or the Help file.
+; Persistent
+
+print(message) {
+    try {
+        FileAppend message "`n", "*"
+    } catch {
+
+    }
+}
+
+onEvent(wParam, lParam, msg, hwnd) {
+    ; print "event " wParam " " lParam " " msg " " hwnd
+    if (wParam = 32772) {
+        SetTimer(DrawActive, -1)
+    }
+}
+
+DrawActive() {
+    ; border_color := "0x6238FF"
+    border_color := "0x7ce38b"
+    ; Start by removing the borders from all windows, since we do not know which window was previously active
+    windowHandles := WinGetList(, , ,)
+    For handle in windowHandles
+    {
+        DrawBorder(handle, , 0)
+    }
+    ; Draw the border around the active window
+    hwnd := WinExist("A")
+    DrawBorder(hwnd, border_color, 1)
+}
+
+DrawBorder(hwnd, color := 0xFF0000, enable := 1) {
+    static DWMWA_BORDER_COLOR := 34
+    static DWMWA_COLOR_DEFAULT := 0xFFFFFFFF
+    R := (color & 0xFF0000) >> 16
+    G := (color & 0xFF00) >> 8
+    B := (color & 0xFF)
+    color := (B << 16) | (G << 8) | R
+    DllCall("dwmapi\DwmSetWindowAttribute", "ptr", hwnd, "int", DWMWA_BORDER_COLOR, "int*", enable ? color : DWMWA_COLOR_DEFAULT, "int", 4)
+}
+
+promote() {
+    
+    global lastPromotedWindow
+    global lastPromotedWindowZone
+    
+    window := WinGetId("A")
+
+    if ( window == lastPromotedWindow ) {
+  
+        snapToZone(SubStr(lastPromotedWindowZone, 1, 1), SubStr(lastPromotedWindowZone, 2, 1))
+        lastPromotedWindow :=  -1
+        lastPromotedWindowZone := -1
+        return 
+    }
+
+    candidates := getBiggestVisibleAreas()
+
+    area := -1
+
+    for key, values in candidates {
+        area := key
+    }
+
+    if (area != -1) {
+        
+        getWindowArea(&currentZone, window)
+
+        snapToZone(SubStr(area, 1, 1), SubStr(area, 2, 1))
+        lastPromotedWindow := window
+        lastPromotedWindowZone := currentZone
+    }
+
+}
+
+getBiggestVisibleAreas() {
+
+    windowHandles := WinGetList(, , "Program Manager")
+
+    candidates := Map()
+
+    maxSize := 0
+
+    for handle in windowHandles
+    {
+
+        try  ; Attempts to execute WinGetProcessName to exclude windows with no process
+        {
+            process := WinGetProcessName(handle)
+
+            ; if ( process == "explorer.exe" or process == "cmd.exe")
+            ;     continue
+
+            WinGetPos &x, &y, &width, &height, handle
+
+            ; if ( ( width == 0 and height == 0 ) or( width == 1 and height == 1) or (x == 0 and  y == 38 ))
+            ;     continue
+
+            class := WinGetClass(handle)
+
+            if (class == "FC_HIDDEN_WND"
+                or class == "WorkerW"
+                or class == "GDI+ Hook Window Class"
+                or class == "XamlExplorerHostIslandWindow"
+                or class == "WindowsDashboard"
+                or class == "TabletModeCoverWindow"
+                or class == "ApplicationFrameWindow"
+                or class == "Windows.UI.Core.CoreWindow")
+                continue
+
+
+            getWindowArea(&area, handle)
+
+            if (area == -1)
+                continue
+
+            toGrid(&targetStartCol, &targetStartRow, SubStr(area, 1, 1))
+            toGrid(&targetStopCol, &targetStopRow, SubStr(area, 2, 1))
+
+            size := (targetStopCol - targetStartCol + 1) * (targetStopRow - targetStartRow + 1)
+
+            minMax := WinGetMinMax(handle)
+
+            ; print "process " process ", area " area ", size " size " minMax " minMax
+            title := WinGetTitle(handle)
+            ; print "class: " class ", title " title
+
+            if (size == maxSize) {
+                values := candidates.Get(area, [])
+                values.Push(handle)
+                candidates.Set(area, values)
+            } else if (size > maxSize) {
+                candidates.Clear
+                values := candidates.Get(size, [])
+                values.Push(handle)
+                candidates.Set(area, values)
+                maxSize := size
+            }
+        }
+        catch as e  ; Handles the first error thrown by the block above.
+        { }
+    }
+
+
+    print "MaxArea =" maxSize ", area candidates " candidates.Count
+    For key, values in candidates {
+        for i, j in values
+            print key " -> " j
+    }
+
+    return candidates
+}
 
 snapToZone(targetStart, targetStop) {
 
     window := WinGetId("A")
 
-    SetWinDelay 5
-
-    getArea(&currentZone, window)
+    getWindowArea(&currentZone, window)
+    ; print "getWindowArea found " currentZone
 
     if (currentZone == targetStart "" targetStop) {
-        return
+        ; switch to next mode zone if requested zone is current zone
+        switch targetStart "" targetStop {
+            case 22:
+                targetStart := 2
+                targetStop := 4
+            case 46:
+                targetStart := 2
+                targetStop := 8
+            case 88:
+                targetStart := 6
+                targetStop := 8
+            case 12:
+                targetStart := 1
+                targetStop := 4
+            case 36:
+                targetStart := 1
+                targetStop := 8
+            case 78:
+                targetStart := 5
+                targetStop := 8
+            case 11:
+                targetStart := 1
+                targetStop := 3
+            case 35:
+                targetStart := 1
+                targetStop := 7
+            case 77:
+                targetStart := 5
+                targetStop := 7
+        }
+        ; print "switched to mode #! zone " targetStart "" targetStop
+    } else if (currentZone == 14 and targetStart "" targetStop == 12) {
+        targetStart := 1
+        targetStop := 6
+        ; print "switched to mode #! zone " targetStart "" targetStop
+    } else if (currentZone == 58 and targetStart "" targetStop == 78) {
+        targetStart := 3
+        targetStop := 8
+        ; print "switched to mode #! zone " targetStart "" targetStop
     }
 
-    currentStart := SubStr(currentZone, 1, 1)
-    currentStop := SubStr(currentZone, 2, 1)
+    ; currentStart := SubStr(currentZone, 1, 1)
+    ; currentStop := SubStr(currentZone, 2, 1)
 
-    toGrid(&currentStartCol, &currentStartRow, currentStart)
-    toGrid(&currentStopCol, &currentStopRow, currentStop)
+    ; toGrid(&currentStartCol, &currentStartRow, currentStart)
+    ; toGrid(&currentStopCol, &currentStopRow, currentStop)
 
     toGrid(&targetStartCol, &targetStartRow, targetStart)
     toGrid(&targetStopCol, &targetStopRow, targetStop)
 
+    ; print "targetStartCol " targetStartCol " targetStartRow " targetStartRow " targetStopCol " targetStopCol " targetStopRow " targetStopRow
 
-    ;    window := WinGetId("A")
+    ; targetArea
+    x := zoneX[targetStartCol]
+    y := zoneY[targetStartRow]
+    w := zoneX[targetStopCol] - zoneX[targetStartCol] + zoneWidth[targetStopCol]
+    h := zoneY[targetStopRow] - zoneY[targetStartRow] + zoneHeight[targetStopRow]
 
-    ;    MsgBox "current : start " currentStart " (" currentStartCol "," currentStartRow ")`tend  " currentStop " (" currentStopCol "," currentStopRow ")`n"
-    ;         . "target  : start " targetStart " (" targetStartCol "," targetStartRow ")`tend  " targetStop " (" targetStopCol "," targetStopRow ")`n"
-    ;         . "shrinkY : " (currentStopRow-currentStartRow) "`n"
-    ;         . "shrinkX : " (currentStopCol-currentStartCol) "`n"
-    ;         . "left    : " (currentStartCol - 1)
+    ; print "x " x " y " y " w " w " h " h
+    WinSetTransparent 0, window
 
-    ; WinSetTransparent 0,window
+    WinMove x, y, w, h, window
 
-    ; reset to area 11
-    ; shrinkY(currentStopRow - currentStartRow)
-    ; shrinkX(currentStopCol - currentStartCol)
-    ; left(currentStartCol - 1)
-    ; up(currentStartRow - 1)
-    ; right(targetStartCol - 1)
-    ; down(targetStartRow - 1)
-    ; growX(targetStopCol - targetStartCol)
-    ; growY(targetStopRow - targetStartRow)
-
-    ; WinSetTransparent 255,window
-
-    ; sleep 15
-    ;    WinMove -2,44,647,780, window
-
-    ;    CoordMode "Mouse","Screen"
-
-    ;    startCol := 1
-    ;    startRow := 1
-
-    ;    MouseMove (startCol * 640 ) - 320  , ( startRow * 780 ) - 410, 0
-
-    ;    MouseGetPos ,,, &hwnd
-
-    ;    WinActivate "ahk_id" window
-    ;
-    ;    getArea(&currentZone, window)
-    ;
-    ;    if ( currentZone == start "" stop ) {
-    ;        return
-    ;    }
-
-    ;    WinSetTransparent 0,window
-
-    ;    reset(window)
-
-    ;    CoordMode "Mouse","Window"
-    ;    MouseMove 0,60,0
-
-
-    ;    PostMessage 0x112, 0xF010, , , window                                 ;      WM_SYSCOMMAND, SC_MOVE
-    ;    SendEvent "^{Down}"
-    ;    sleep 10
-    ;    CoordMode "Mouse","Screen"
-    ;    WinMove 320 , 410,647,780, window
-    ;    MouseMove 320 , 410, 10
-    ;    sleep 10
-    ;       SendEvent "{Click}"
-    ;     sleep 10
-    ;    SendEvent "^{Up}{Enter}"
-    ;    WinMove -2,44,647,780, window
-    ;    sleep 10
-    ;    PostMessage 0xA1, 2,,, A
-
-    ;    SendEvent "!{Space}m"
-    ;    sleep 10
-    ;    SendInput "#{right}"
-    ;    sleep 10
-    ;    SendInput "#{left}"
-    ;    sleep 10
-    ;    right()
-    ;    left()
-
-    ;    down()
-    ;    right(2)
-
-    ;    MouseMove (stopCol * 640 ) - 320  , ( stopRow * 780 ) - 410, 10
-    ;    sleep 15
-    ;    CoordMode "Mouse","Screen"
-    ;    WinMove -2,44,647,780, window
-    ;    MouseMove (startCol * 640 ) - 320  , ( startRow * 780 ) - 410, 10
-    ;    sleep 15
-    ;    SendEvent "!{Space}m"
-    ;    sleep 15
-    ;    SendEvent "{Enter}"
-    ;    SendInput "m"
-    ;    sleep 15
-    ;    SendEvent "LWin up"
-    ;    sleep 15
-    ;    SendEvent "{Click down}"
-    ;    sleep 15
-    ;    SendInput "{Ctrl down}"
-    ;    MouseDrag ,(startCol * 640 ) - 320  , ( startRow * 780 ) - 410,(stopCol * 640 ) - 320  , ( stopRow * 780 ) - 410, 10
-    ;    SendEvent "^{Click " (stopCol * 640 ) - 320 " " ( stopRow * 780 ) - 410 " Down}"
-    ;    sleep 15
-    ;    SendEvent "{Ctrl up}"
-    ;    SendInput "{Enter}"
-    ;    sleep 15
-    ;    SendEvent "^{up}"
-    ;    sleep 15
-
-
-    ;    sleep 15
-    ;    SendEvent "{LButton}"
-    ;    sleep 15
-    ;    SendInput "{Enter}"
-    ;    sleep 15
-    ;    SendInput "{Ctrl down}{Ctrl up}"
-    ;    WinRestore window
-    ;    Send "{LWin up}"
-    ;    SendEvent "{Ctrl up}"
-    ;    sleep 15
-    ;    SendInput "^{Up}"
-    ;    sleep 15
-    ;    Send "{LWin up}{LWin down}"
-    ;    Send "{LWin up}"
-    ;    sleep 5
-    ; ┌───────┐
-    ; │1 3 5 7│
-    ; │       │
-    ; │2 4 6 8│
-    ; └───────┘
-
-    ;    switch start "" stop {
-    ;        case 22:
-    ;            down
-    ;        case 46:
-    ;            right
-    ;            down
-    ;            growX
-    ;        case 88:
-    ;            right 3
-    ;            down
-    ;        case 12:
-    ;            growY
-    ;        case 36:
-    ;            right
-    ;            growX
-    ;            growY
-    ;        case 78:
-    ;            right 3
-    ;            growY
-    ;        case 11:
-    ;             right
-    ;             left
-    ;        case 35:
-    ;            right
-    ;            growX
-    ;        case 77:
-    ;            right 3
-    ;        ; others
-    ;        case 24: ; ok
-    ;            down
-    ;            growX
-    ;        case 14:
-    ;            growX
-    ;            growY
-    ;        case 18:
-    ;            growX 4
-    ;            growY
-    ;        case 68:
-    ;            right 2
-    ;            down
-    ;            growX
-    ;        case 58:
-    ;            right 2
-    ;            growY
-    ;            growX
-    ;        case 13:
-    ;            growX
-    ;        case 57:
-    ;            right 2
-    ;            growX
-    ;
-    ;    }
-
-    ;    sleep 10
-    ;    WinSetTransparent 255,window
+    WinSetTransparent 255, window
 }
 
-reset(window) {
-    WinMove -2, 44, 647, 780, window
-    ;    sleep 10
-    ;    SendInput "!{Space}m"
-    ;    sleep 10
-    ;    SendInput "{Ctrl}{Enter}"
-    ;    sleep 10
-
-    Send "#{Right}"
-    ;    left()
-}
-
-getArea(&area, window) {
+getWindowArea(&area, window) {
     WinGetPos &x, &y, &width, &height, window
 
-    switch x {
-        case -2: colStart := 1
-        case 635: colStart := 2
-        case 1275: colStart := 3
-        case 1915: colStart := 4
-        default: MsgBox x
+    colStart := -1
+    colStop := -1
+    rowStart := -1
+    rowStop := -1
+    area := -1
+
+    for col, pos in zoneX
+        if (x >= pos - threshold and x <= pos + threshold) {
+            colStart := col
+            break
+        }
+
+    for col, pos in zoneX {
+        ; print " " x + width " >=  " (pos + zoneWidth[col]) - threshold  " and " x + width " <= " (pos + +zoneWidth[col]) + threshold
+        if (x + width >= (pos + zoneWidth[col]) - threshold and x + width <= (pos + +zoneWidth[col]) + threshold) {
+            colStop := col
+            break
+        }
     }
 
-    switch x + width {
-        case 645: colStop := 1
-        case 1285: colStop := 2
-        case 1925: colStop := 3
-        case 2562: colStop := 4
+    for row, pos in zoneY {
+        ; print "  " y " >=  " zoneY[row] - threshold " and " y " <= " zoneY[row] + threshold
+        if (y >= pos - threshold and y <= pos + threshold) {
+            rowStart := row
+            break
+        }
     }
 
-    switch y {
-        case 44: rowStart := 1
-        case 822: rowStart := 2
+    for row, pos in zoneY {
+        ; print "  " y + height " >=  " zoneY[row] - threshold " and " y + height " <= " zoneY[row] + threshold
+        if (y + height >= (pos + zoneHeight[row]) - threshold and y + height <= (pos + zoneHeight[row]) + threshold) {
+            rowStop := row
+            break
+        }
     }
 
-    switch y + height {
-        case 824: rowStop := 1
-        case 1602: rowStop := 2
+    if (colStart != -1 and rowStart != -1 and colStop != -1 and rowStop != -1) {
+        getZone(colStart, rowStart, &startZone)
+        getZone(colStop, rowStop, &endZone)
+
+        area := startZone "" endZone
+        ; print "Setting area to " area
     }
 
-    getZone(colStart, rowStart, &startZone)
-    getZone(colStop, rowStop, &endZone)
+    ; print "area not found "
 
-    area := startZone "" endZone
 }
 
 getZone(col, row, &zone) {
@@ -279,6 +336,7 @@ getZone(col, row, &zone) {
 }
 
 toGrid(&col, &row, zone) {
+    ; print "toGrid(" zone ")"
     switch zone {
         case 1:
             col := 1
@@ -308,56 +366,45 @@ toGrid(&col, &row, zone) {
 }
 
 
-right(repeat := 1) {
-    Send "#{right " repeat "}"
-    Sleep 5
-}
+; right(repeat := 1) {
+;     Send "#{right " repeat "}"
+;     Sleep 5
+; }
 
-left(repeat := 1) {
-    Send "#{left " repeat " }"
-    Sleep 5
-}
+; left(repeat := 1) {
+;     Send "#{left " repeat " }"
+;     Sleep 5
+; }
 
-up(repeat := 1) {
-    Send "#{up " repeat " }"
-    Sleep 5
-}
+; up(repeat := 1) {
+;     Send "#{up " repeat " }"
+;     Sleep 5
+; }
 
-down(repeat := 1) {
-    Send "#{down " repeat "}"
-    Sleep 5
-}
+; down(repeat := 1) {
+;     Send "#{down " repeat "}"
+;     Sleep 5
+; }
 
-growX(repeat := 1) {
-    Send "^!#{right " repeat "}"
-    Sleep 5
-}
+; growX(repeat := 1) {
+;     Send "^!#{right " repeat "}"
+;     Sleep 5
+; }
 
-growY(repeat := 1) {
-    Send "^!#{down " repeat "}"
-    Sleep 5
-}
+; growY(repeat := 1) {
+;     Send "^!#{down " repeat "}"
+;     Sleep 5
+; }
 
-shrinkX(repeat := 1) {
-    Send "^!#{left " repeat "}"
-    Sleep 5
-}
+; shrinkX(repeat := 1) {
+;     Send "^!#{left " repeat "}"
+;     Sleep 5
+; }
 
-shrinkY(repeat := 1) {
-    SendInput "^!#{up " repeat "}"
-    Sleep 5
-}
-
-
-;reset(window) {
-;    WinMove -2,44,647,780, window
-;    SendInput "!{Space}m"
-;    SendEvent "^{Down}{Enter}"
-;    right()
-;    left()
-;}
-;
-;
+; shrinkY(repeat := 1) {
+;     SendInput "^!#{up " repeat "}"
+;     Sleep 5
+; }
 ;right(repeat := 1) {
 ;    SendInput "#{right " repeat "}"
 ;;    sleep 10
@@ -372,6 +419,18 @@ shrinkY(repeat := 1) {
 ;growY(repeat := 1) {
 ;   SendInput "^!#{down " repeat "}"
 ;}
+
+
+setup() {
+    MonitorGetWorkArea(1, &wLeft, &wTop, &wRight, &wBottom)
+    ; print "Workarea   " wLeft " " wTop " " wRight " " wBottom
+    ; MonitorGet(1, &Left, &Top, &Right, &Bottom)
+    ; FileAppend "Boundaries " Left " " Top " " Right " " Bottom, "*"
+    print "w    " (wRight - (5 * spacing)) // 4
+    print "h   " ((wBottom - wTop) - (3 * spacing)) // 2
+}
+
+#x:: promote()
 
 #numpad1:: snapToZone(2, 2)
 #numpad2:: snapToZone(4, 6)
