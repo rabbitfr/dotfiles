@@ -13,13 +13,15 @@ global zoneX := [-2, 635, 1275, 1915]
 global zoneY := [44, 822]
 global zoneWidth := [647, 650, 650, 647]
 global zoneHeight := [780, 780, 780, 780]
-global zoneCenter := [322, 960, 650, 647]
+global zoneCenterX := [322, 960, 650, 647]
+global zoneCenterY := [406, 1184]
+global zoneSlots := [0, 0, 0, 0, 0, 0, 0, 0]
 
 ; global zoneX := [5, 639, 1292, 1929]
 ; global zoneY := [44, 825]
 ; global zoneWidth := [633, 633, 633, 633]
 ; global zoneHeight := [775, 775, 775, 775]
-; global zoneCenter := [322, 960, 650, 647]   
+; global zoneCenter := [322, 960, 650, 647]
 
 
 global spacing := 6
@@ -35,8 +37,6 @@ global threshold := 150
 global areaWidth := 2560
 global areaHeight := 1600
 
-
-
 myGui := Gui()
 myGui.Opt("+LastFound")
 hWnd := WinExist()
@@ -46,9 +46,10 @@ OnMessage(MsgNum, ShellMessage)
 Persistent ; This script will not exit automatically, even though it has nothing to do.
 
 ShellMessage(wParam, lParam, msg, hwnd) {
-    ; print "event " wParam " " lParam " " msg " " hwnd
-    if (wParam = 32772) {
-        ; SetTimer(DrawActive, -1)
+    print "event " wParam " " lParam " " msg " " hwnd
+    switch wParam {
+        case 32772: SetTimer(DrawActive, -1)
+        ; case 1: PlaceNewWindow(lParam)
     }
 }
 
@@ -64,12 +65,12 @@ print(message) {
     }
 }
 
-onEvent(wParam, lParam, msg, hwnd) {
-    ; print "event " wParam " " lParam " " msg " " hwnd
-    if (wParam = 32772) {
-        SetTimer(DrawActive, -1)
-    }
-}
+; onEvent(wParam, lParam, msg, hwnd) {
+;     ; print "event " wParam " " lParam " " msg " " hwnd
+;     if (wParam = 32772) {
+;         SetTimer(DrawActive, -1)
+;     }
+; }
 
 DrawActive() {
     ; border_color := "0x6238FF"
@@ -95,19 +96,137 @@ DrawBorder(hwnd, color := 0xFF0000, enable := 1) {
     DllCall("dwmapi\DwmSetWindowAttribute", "ptr", hwnd, "int", DWMWA_BORDER_COLOR, "int*", enable ? color : DWMWA_COLOR_DEFAULT, "int", 4)
 }
 
-promote() {
+F2::PlaceNewWindow(WinGetId("A"))
+
+PlaceNewWindow(window) {
+
+    DetectHiddenWindows false
+
+    windowHandles := WinGetList(, , "Program Manager")
+
+    global zoneSlots := [0, 0, 0, 0, 0, 0, 0, 0]
+
+    windowByArea := Map()
+
+
+    for handle in windowHandles
+    {
+
+        try  ; Attempts to execute WinGetProcessName to exclude windows with no process
+        {
+            process := WinGetProcessName(handle)
+
+            ; if ( process == "explorer.exe" or process == "cmd.exe")
+            ;     continue
+
+            WinGetPos &x, &y, &width, &height, handle
+
+            ; if ( ( width == 0 and height == 0 ) or( width == 1 and height == 1) or (x == 0 and  y == 38 ))
+            ;     continue
+
+            class := WinGetClass(handle)
+
+            if (class == "FC_HIDDEN_WND"
+                or class == "WorkerW"
+                or class == "GDI+ Hook Window Class"
+                or class == "XamlExplorerHostIslandWindow"
+                or class == "WindowsDashboard"
+                or class == "TabletModeCoverWindow"
+                or class == "ApplicationFrameWindow"
+                or class == "Windows.UI.Core.CoreWindow")
+                continue
+
+
+            getWindowArea(&area, handle)
+
+            print "area " area
+            if (area == -1)
+                continue
+
+            
+            values := windowByArea.Get(area, [])
+            values.Push(handle)
+            windowByArea.Set(area, values)
+
+            toGrid(&targetStartCol, &targetStartRow, SubStr(area, 1, 1))
+            toGrid(&targetStopCol, &targetStopRow, SubStr(area, 2, 1))
+
     
+            Loop targetStopCol - targetStartCol {
+                col := targetStartCol + A_Index
+                Loop targetStopRow - targetStopRow {
+                    row := A_Index 
+                    print col "," row
+                }
+            }
+
+
+            ; print "process " process ", area " area ", size " size " minMax " minMax
+            ; title := WinGetTitle(handle)
+            ; print "class: " class ", title " title
+
+        }
+        catch as e  ; Handles the first error thrown by the block above.
+        { }
+
+
+      
+        For key, values in windowByArea {
+            for i, j in values
+                print key " -> " j
+        }
+    }
+
+
+    ; for j, y in zoneCenterY {
+    ;     for i, x in zoneCenterX {
+    ;         winId := DllCall("WindowFromPoint", "Int", x, "Int", y)
+    ;         process := WinGetProcessName("ahk_id " winID)
+
+    ;         ; print "col " i " row " j " " x " " y  " winId " winId " : " process " " title
+
+    ;         if ( process == "explorer.exe") {
+    ;             GW_HWNDNEXT :=2 ; Returns a handle to the window below the given window.
+    ;             GW_HWNDPREV :=3 ; Returns a handle to the window above the given window.
+
+    ;             above := DllCall("GetWindow", "uint", winID, "uint", GW_HWNDNEXT)
+
+    ;               print "above " above
+    ;         }
+    ;         ; print "col " i " row " j " winId " winId
+    ;         title := WinGetTitle("ahk_id " winID)
+    ;         print "col " i " row " j " " x " " y  " winId " winId " : " process " " title
+    ;     }
+
+    ; }
+
+
+    ; try  ; Attempts to execute WinGetProcessName to exclude windows with no process
+    ; {
+    ;     WinWaitActive window
+    ;     process := WinGetProcessName(window)
+    ;     print "Place " process
+
+
+    ; } catch as e  ; Handles the first error thrown by the block above.
+    ; { }
+
+}
+
+
+promote() {
+
     global lastPromotedWindow
     global lastPromotedWindowZone
-    
+
     window := WinGetId("A")
 
-    if ( window == lastPromotedWindow ) {
-  
+    if (window == lastPromotedWindow) {
+
         snapToZone(SubStr(lastPromotedWindowZone, 1, 1), SubStr(lastPromotedWindowZone, 2, 1))
-        lastPromotedWindow :=  -1
+        lastPromotedWindow := -1
         lastPromotedWindowZone := -1
-        return 
+        return
     }
 
     candidates := getBiggestVisibleAreas()
@@ -119,7 +238,7 @@ promote() {
     }
 
     if (area != -1) {
-        
+
         getWindowArea(&currentZone, window)
 
         snapToZone(SubStr(area, 1, 1), SubStr(area, 2, 1))
@@ -246,15 +365,16 @@ snapToZone(targetStart, targetStop) {
                 targetStop := 7
         }
         ; print "switched to mode #! zone " targetStart "" targetStop
-    } else if (currentZone == 14 and targetStart "" targetStop == 12) {
-        targetStart := 1
-        targetStop := 6
-        ; print "switched to mode #! zone " targetStart "" targetStop
-    } else if (currentZone == 58 and targetStart "" targetStop == 78) {
-        targetStart := 3
-        targetStop := 8
-        ; print "switched to mode #! zone " targetStart "" targetStop
     }
+    ; else if (currentZone == 14 and targetStart "" targetStop == 12) {
+    ;     targetStart := 1
+    ;     targetStop := 6
+    ;     ; print "switched to mode #! zone " targetStart "" targetStop
+    ; } else if (currentZone == 58 and targetStart "" targetStop == 78) {
+    ;     targetStart := 3
+    ;     targetStop := 8
+    ;     ; print "switched to mode #! zone " targetStart "" targetStop
+    ; }
 
     ; currentStart := SubStr(currentZone, 1, 1)
     ; currentStop := SubStr(currentZone, 2, 1)
@@ -275,7 +395,7 @@ snapToZone(targetStart, targetStop) {
 
     if !hasInvisibleBorder(window) {
         x := x + 8
-        w := w - 16 
+        w := w - 16
         h := h - 8
     }
 
@@ -283,7 +403,7 @@ snapToZone(targetStart, targetStop) {
     WinSetTransparent 0, window
 
     ; WinMoveEx x, y, w, h, window*
-     WinMove x, y, w, h, window
+    WinMove x, y, w, h, window
 
     WinSetTransparent 255, window
 }
@@ -460,7 +580,7 @@ WinMoveEx(x?, y?, w?, h?, hwnd?) {
         hwnd := WinExist(hwnd)
     if !IsSet(hwnd)
         hwnd := WinExist()
- 
+
     ; compare pos and get offset
     WinGetPosEx(&fX, &fY, &fW, &fH, hwnd)
     WinGetPos(&wX, &wY, &wW, &wH, hwnd)
@@ -475,42 +595,66 @@ WinMoveEx(x?, y?, w?, h?, hwnd?) {
     IsSet(h) && nH := h - diffH
     WinMove(nX?, nY?, nW?, nH?, hwnd?)
 }
- 
+
 ; get window position without the invisible border
 WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
     static DWMWA_EXTENDED_FRAME_BOUNDS := 9
- 
+
     if !(hwnd is integer)
         hwnd := WinExist(hwnd)
     if !IsSet(hwnd)
         hwnd := WinExist() ; last found window
- 
+
     DllCall("dwmapi\DwmGetWindowAttribute",
-            "ptr" , hwnd,
-            "uint", DWMWA_EXTENDED_FRAME_BOUNDS,
-            "ptr" , RECT := Buffer(16, 0),
-            "int" , RECT.size,
-            "uint")
-    x := NumGet(RECT,  0, "int")
-    y := NumGet(RECT,  4, "int")
-    w := NumGet(RECT,  8, "int") - x
+        "ptr", hwnd,
+        "uint", DWMWA_EXTENDED_FRAME_BOUNDS,
+        "ptr", RECT := Buffer(16, 0),
+        "int", RECT.size,
+        "uint")
+    x := NumGet(RECT, 0, "int")
+    y := NumGet(RECT, 4, "int")
+    w := NumGet(RECT, 8, "int") - x
     h := NumGet(RECT, 12, "int") - y
 }
 
 #x:: promote()
 
+; #Up:: ;disable
+; #Down:: ; disable
+
+; #HotIf GetKeyState("LWin", "P")
+; Left & Up:: snapToZone(1, 1)
+
+; #HotIf GetKeyState("LWin", "P")
+; Left & Down:: snapToZone(2, 2)
+
+; #HotIf GetKeyState("LWin", "P")
+; Up & Right:: snapToZone(7, 7)
+
+; #HotIf GetKeyState("LWin", "P")
+; Down & Right:: snapToZone(8, 8)
+
+
 #numpad1:: snapToZone(2, 2)
 #numpad2:: snapToZone(4, 6)
 #numpad3:: snapToZone(8, 8)
+#Left::
 #numpad4:: snapToZone(1, 2)
 #numpad5:: snapToZone(3, 6)
+#Right::
 #numpad6:: snapToZone(7, 8)
 #numpad7:: snapToZone(1, 1)
 #numpad8:: snapToZone(3, 5)
 #numpad9:: snapToZone(7, 7)
 
-#Left:: snapToZone(4,6)
 
+; Left:: if (GetKeyState("LWin") and GetKeyState("Left") and GetKeyState("Up")){
+;     MsgBox "Left."
+; }
+
+; Up:: if (GetKeyState("LWin") and GetKeyState("Left") and GetKeyState("Up")){
+;     MsgBox "Up."
+; }
 
 #!numpad1:: snapToZone(2, 4)
 #!numpad2:: snapToZone(2, 8)
