@@ -14,7 +14,15 @@ global zoneY := [44, 822]
 global zoneWidth := [647, 650, 650, 647]
 global zoneHeight := [780, 780, 780, 780]
 global zoneCenter := [322, 960, 650, 647]
-global spacing := 0
+
+; global zoneX := [5, 639, 1292, 1929]
+; global zoneY := [44, 825]
+; global zoneWidth := [633, 633, 633, 633]
+; global zoneHeight := [775, 775, 775, 775]
+; global zoneCenter := [322, 960, 650, 647]   
+
+
+global spacing := 6
 global lastActionWindow := 0
 
 global lastPromotedWindow := -1
@@ -27,6 +35,8 @@ global threshold := 150
 global areaWidth := 2560
 global areaHeight := 1600
 
+
+
 myGui := Gui()
 myGui.Opt("+LastFound")
 hWnd := WinExist()
@@ -38,7 +48,7 @@ Persistent ; This script will not exit automatically, even though it has nothing
 ShellMessage(wParam, lParam, msg, hwnd) {
     ; print "event " wParam " " lParam " " msg " " hwnd
     if (wParam = 32772) {
-        SetTimer(DrawActive, -1)
+        ; SetTimer(DrawActive, -1)
     }
 }
 
@@ -263,12 +273,26 @@ snapToZone(targetStart, targetStop) {
     w := zoneX[targetStopCol] - zoneX[targetStartCol] + zoneWidth[targetStopCol]
     h := zoneY[targetStopRow] - zoneY[targetStartRow] + zoneHeight[targetStopRow]
 
+    if !hasInvisibleBorder(window) {
+        x := x + 8
+        w := w - 16 
+        h := h - 8
+    }
+
     ; print "x " x " y " y " w " w " h " h
     WinSetTransparent 0, window
 
-    WinMove x, y, w, h, window
+    ; WinMoveEx x, y, w, h, window*
+     WinMove x, y, w, h, window
 
     WinSetTransparent 255, window
+}
+
+hasInvisibleBorder(window) {
+    WinGetClientPos , , &cWidth, &cHeight, window
+    WinGetPos , , &width, &height, window
+    return cWidth != width and cHeight != height
+
 }
 
 getWindowArea(&area, window) {
@@ -430,6 +454,49 @@ setup() {
     print "h   " ((wBottom - wTop) - (3 * spacing)) // 2
 }
 
+; move window and fix offset from invisible border
+WinMoveEx(x?, y?, w?, h?, hwnd?) {
+    if !(hwnd is integer)
+        hwnd := WinExist(hwnd)
+    if !IsSet(hwnd)
+        hwnd := WinExist()
+ 
+    ; compare pos and get offset
+    WinGetPosEx(&fX, &fY, &fW, &fH, hwnd)
+    WinGetPos(&wX, &wY, &wW, &wH, hwnd)
+    diffX := fX - wX
+    diffY := fY - wY
+    diffW := fW - wW
+    diffH := fH - wH
+    ; new x, y, w, h with offset corrected.
+    IsSet(x) && nX := x - diffX
+    IsSet(y) && nY := y - diffY
+    IsSet(w) && nW := w - diffW
+    IsSet(h) && nH := h - diffH
+    WinMove(nX?, nY?, nW?, nH?, hwnd?)
+}
+ 
+; get window position without the invisible border
+WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
+    static DWMWA_EXTENDED_FRAME_BOUNDS := 9
+ 
+    if !(hwnd is integer)
+        hwnd := WinExist(hwnd)
+    if !IsSet(hwnd)
+        hwnd := WinExist() ; last found window
+ 
+    DllCall("dwmapi\DwmGetWindowAttribute",
+            "ptr" , hwnd,
+            "uint", DWMWA_EXTENDED_FRAME_BOUNDS,
+            "ptr" , RECT := Buffer(16, 0),
+            "int" , RECT.size,
+            "uint")
+    x := NumGet(RECT,  0, "int")
+    y := NumGet(RECT,  4, "int")
+    w := NumGet(RECT,  8, "int") - x
+    h := NumGet(RECT, 12, "int") - y
+}
+
 #x:: promote()
 
 #numpad1:: snapToZone(2, 2)
@@ -441,6 +508,9 @@ setup() {
 #numpad7:: snapToZone(1, 1)
 #numpad8:: snapToZone(3, 5)
 #numpad9:: snapToZone(7, 7)
+
+#Left:: snapToZone(4,6)
+
 
 #!numpad1:: snapToZone(2, 4)
 #!numpad2:: snapToZone(2, 8)
