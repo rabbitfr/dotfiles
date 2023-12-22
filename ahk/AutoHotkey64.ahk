@@ -433,19 +433,19 @@ nextModZone(&zoneStart, &zoneStop) {
             zoneStop := 6
         case 67:
             zoneStart := 5 ; ???
-            zoneStop := 8 
+            zoneStop := 8
         case 88:
             zoneStart := 7
             zoneStop := 8
         case 15:
-            zoneStart := 2
+            zoneStart := 1
             zoneStop := 6
         case 27:
             zoneStart := 1
             zoneStop := 8
         case 48:
             zoneStart := 3
-            zoneStop := 7
+            zoneStop := 8
         case 11:
             zoneStart := 1
             zoneStop := 2
@@ -487,14 +487,12 @@ zoneToCell(&col, &row, zone) {
     row := ((zone - 1) // columns) + 1
 }
 
-getWindowArea(&startZone, &endZone, window) {
+cellToZone(col, row, &zone) {
+    zone := col + (( row -1 ) * columns )
+}
 
-    WinGetPos &x, &y, &width, &height, window
 
-    ; colStart := -1
-    ; colStop := -1
-    ; rowStart := -1
-    ; rowStop := -1
+setup() {
 
     MonitorGetWorkArea(1, &wl, &wt, &wr, &wb)
     print "Monitor 1 WorkArea  l  " wl " t " wt " r " wr " b " wb
@@ -512,6 +510,42 @@ getWindowArea(&startZone, &endZone, window) {
     print "Monitor 1 cells    w " cellWidth " h " cellHeight
     print "                   areaWidth " areaWidth " areaWHeight " areaWHeight
     print "                   originX   " originX " originY " originY
+
+}
+
+getWindowArea(&startZone, &endZone, window) {
+
+    WinGetPos &x, &y, &width, &height, window
+
+    setup()
+
+    x1 := x
+    y1 := y
+
+    ; x2 := x + width
+    ; y2 := y + height
+
+    startCol := Round(x1 / cellWidth) + 1
+    startRow:=  Round(y1 / cellHeight)  + 1 
+
+    stopCol := startCol + Round(width / cellWidth) - 1
+    stopRow := startRow + Round(height / cellHeight)- 1
+
+    ; print "x1 " x1 " y1 " y1 " x2  " x2 " y2 " y2
+    ; print "x1 " Round(x1 / cellWidth) " y1 " Round(y1 / cellHeight) " w  " Round(width / cellWidth) " h "  Round(height / cellHeight)
+    
+    ; print "startCol " startCol " startRow " startRow " stopCol  " stopCol " stopRow "  stopRow
+
+    cellToZone(startCol,startRow,&startZone)
+    cellToZone(stopCol,stopRow,&endZone)
+
+    ; print "startZone " startZone " endZone " endZone 
+    ; colStart := -1
+    ; colStop := -1
+    ; rowStart := -1
+    ; rowStop := -1
+
+    ; setup
 
     ; for col, pos in zoneX
     ;     if (x >= pos - threshold and x <= pos + threshold) {
