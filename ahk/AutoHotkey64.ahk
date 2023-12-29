@@ -32,10 +32,6 @@ global lastPromotedWindowZone := -1
 global lastPositiodnById := 0 ; @TODO
 global lastPositionByProcess := 0 ; @TODO
 
-global threshold := 150
-global areaWidth := 2560
-global areaHeight := 1600
-
 myGui := Gui()
 myGui.Opt("+LastFound")
 hWnd := WinExist()
@@ -45,7 +41,7 @@ OnMessage(MsgNum, ShellMessage)
 Persistent ; This script will not exit automatically, even though it has nothing to do.
 
 ShellMessage(wParam, lParam, msg, hwnd) {
-    print "event " wParam " " lParam " " msg " " hwnd
+    ; print "event " wParam " " lParam " " msg " " hwnd
     switch wParam {
         case 32772: SetTimer(DrawActive, -1)
             ; case 1: PlaceNewWindow(lParam)
@@ -422,6 +418,7 @@ F7:: snapToZone(7, 7)
 F8:: snapToZone(8, 8)
 
 
+
 global spacing := 4
 global columns := 4
 global rows := 2
@@ -458,6 +455,76 @@ nextModZone(&zoneStart, &zoneStop) {
     }
 }
 
+
+;  1  2  3  4 
+;  5  6  7  8 
+
+global L := 15
+global R := 48
+global C := 27
+global F := 18
+global LS := 16
+global RS := 38
+global L3 := 17
+global R3 := 28
+
+
+left(window := WinGetId("A")) {
+    getWindowArea(&startZone, &endZone, window)
+
+    switch startZone "" endZone {
+        case C: snapTo(L3, window) 
+        ; case 38: snapToZone(1, 7, window) 
+        ; unexpand 
+        case R3: snapTo(C, window) 
+        case L3: snapTo(LS, window)
+    }
+}
+
+
+right(window := WinGetId("A")) {
+    getWindowArea(&startZone, &endZone, window)
+
+    switch startZone "" endZone {
+        case C: snapTo(R3, window) 
+        ; case RS: snapToZone(R3, window) 
+        case L: snapTo(L3, window)
+        ; unexpand 
+        case LS: snapTo(L3, window) 
+        case R3: snapTo(R, window) 
+        case L3: snapTo(C, window) 
+    }
+}
+
+up(window := WinGetId("A")) {
+    getWindowArea(&startZone, &endZone, window)
+
+    switch startZone "" endZone {
+    ;     case 27: snapToZone(2, 8, window) 
+    ;     case 38: snapToZone(1, 7, window) 
+    ;     case 15: snapToZone(1, 7, window)
+    ;     ; unexpand 
+    ;     case 17: snapToZone(2, 7, window) 
+    ;     case 28: snapToZone(4, 8, window) 
+    }
+}
+
+down(window := WinGetId("A")) {
+    getWindowArea(&startZone, &endZone, window)
+
+    switch startZone "" endZone {
+    ;     case 27: snapToZone(2, 8, window) 
+    ;     case 38: snapToZone(1, 7, window) 
+    ;     case 15: snapToZone(1, 7, window)
+    ;     ; unexpand 
+    ;     case 17: snapToZone(2, 7, window) 
+    ;     case 28: snapToZone(4, 8, window) 
+    }
+}
+
+snapTo(area, window := WinGetId("A")) {
+    snapToZone(SubStr(area,1,1),SubStr(area,2,1),window)
+}
 snapToZone(zoneStart, zoneStop, window := WinGetId("A")) {
 
     getWindowArea(&currentStartZone, &currentEndZone, window)
@@ -488,7 +555,7 @@ zoneToCell(&col, &row, zone) {
 }
 
 cellToZone(col, row, &zone) {
-    zone := col + (( row -1 ) * columns )
+    zone := col + ((row - 1) * columns)
 }
 
 
@@ -526,20 +593,20 @@ getWindowArea(&startZone, &endZone, window) {
     ; y2 := y + height
 
     startCol := Round(x1 / cellWidth) + 1
-    startRow:=  Round(y1 / cellHeight)  + 1 
+    startRow := Round(y1 / cellHeight) + 1
 
     stopCol := startCol + Round(width / cellWidth) - 1
-    stopRow := startRow + Round(height / cellHeight)- 1
+    stopRow := startRow + Round(height / cellHeight) - 1
 
     ; print "x1 " x1 " y1 " y1 " x2  " x2 " y2 " y2
     ; print "x1 " Round(x1 / cellWidth) " y1 " Round(y1 / cellHeight) " w  " Round(width / cellWidth) " h "  Round(height / cellHeight)
-    
+
     ; print "startCol " startCol " startRow " startRow " stopCol  " stopCol " stopRow "  stopRow
 
-    cellToZone(startCol,startRow,&startZone)
-    cellToZone(stopCol,stopRow,&endZone)
+    cellToZone(startCol, startRow, &startZone)
+    cellToZone(stopCol, stopRow, &endZone)
 
-    ; print "startZone " startZone " endZone " endZone 
+    ; print "startZone " startZone " endZone " endZone
     ; colStart := -1
     ; colStop := -1
     ; rowStart := -1
@@ -789,6 +856,11 @@ WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
 #numpad7:: snapToZone(1, 1)
 #numpad8:: snapToZone(2, 3)
 #numpad9:: snapToZone(4, 4)
+
+#Left:: left()
+#Right:: right()
+#Up:: up()
+#Down:: down()
 
 
 ; Left:: if (GetKeyState("LWin") and GetKeyState("Left") and GetKeyState("Up")){
