@@ -44,32 +44,52 @@ global R3 := 28
 ; 5678
 global T := 14
 ; 1234
-; 5678
+; ....
 global B := 58
-; 1234
+; ....
 ; 5678
+global CT := 23
+; .23.
+; ....
+global CB := 67
+; ....
+; .67.
 global TL := 12
-; 1234
-; 5678
+; 12..
+; ....
 global TR := 34
-; 1234
-; 5678
+; ..34
+; ....
 global BL := 56
-; 1234
-; 5678
+; ....
+; 56..
 global BR := 78
-; 1234
-; 5678
+; ....
+; ..78
 global TLC := 11
-; 1234
-; 5678
+; 1...
+; ....
 global TRC := 44
-; 1234
-; 5678
+; ...4
+; ....
 global BLC := 55
-; 1234
-; 5678
+; ....
+; 5...
 global BRC := 88
+; ....
+; ...8
+global CTLC := 22
+; 1...
+; ....
+global CTRC := 33
+; ...4
+; ....
+global CBLC := 66
+; ....
+; 5...
+global CBRC := 77
+; ....
+; ...8
 
 global areasToZones := Map()
 areasToZones["L"] := L
@@ -82,6 +102,8 @@ areasToZones["L3"] := L3
 areasToZones["R3"] := R3
 areasToZones["T"] := T
 areasToZones["B"] := B
+areasToZones["CT"] := CT
+areasToZones["CB"] := CB
 areasToZones["TL"] := TL
 areasToZones["TR"] := TR
 areasToZones["BL"] := BL
@@ -90,6 +112,10 @@ areasToZones["TLC"] := TLC
 areasToZones["TRC"] := TRC
 areasToZones["BLC"] := BLC
 areasToZones["BRC"] := BRC
+areasToZones["CTLC"] := CTLC
+areasToZones["CTRC"] := CTRC
+areasToZones["CBLC"] := CBLC
+areasToZones["CBRC"] := CBRC
 
 ; 1   2   3   4
 ; 1   2   4   8
@@ -130,7 +156,7 @@ global spacing := 4
 global columns := 4
 global rows := 2
 
-global slots := [1, 1, 1, 1, 1, 1, 1, 1]
+global slots := [0, 0, 0, 0, 0, 0, 0, 0]
 
 global lastActionWindow := 0
 
@@ -139,6 +165,10 @@ global lastPromotedWindowZone := -1
 
 global lastPositiodnById := 0 ; @TODO
 global lastPositionByProcess := 0 ; @TODO
+
+
+global logLevel := "INFO"
+
 myGui := Gui()
 myGui.Opt("+LastFound")
 hWnd := WinExist()
@@ -173,7 +203,7 @@ DrawActive() {
     window := WinExist("A")
 
     if hasWindowsOnSamePosition(window) {
-        border_color := "0x79e1df" ; pink
+        border_color := "0xf9cbe5"
     } else {
         border_color := "0x7ce38b"
     }
@@ -284,25 +314,22 @@ refresh() {
 
     }
 
-    debugRefresh := true
 
-
-    if (debugRefresh)
-        print "Handles :"
+    debug "Handles :"
 
     visibleHandles := Map()
 
     for handle, pos in posByHandle {
 
-        if (debugRefresh)
-            print handle "`t " pos
+
+        debug handle "`t " handleDesc[handle]
 
         if (pos != "Min" and pos != "Max")
             visibleHandles.Set(handle, pos)
     }
 
-    if (debugRefresh)
-        print "`nVisible Handles :"
+
+    debug "`nVisible Handles :"
 
     ; Build slots usage status
     for handle, pos in visibleHandles {
@@ -318,13 +345,13 @@ refresh() {
             zoneToCell(&stopCol, &stopRow, SubStr(zone, 2, 1))
         }
 
-        if (debugRefresh)
-            print handle "`t " handleDesc[handle] " `t" startCol "," startRow " -> " stopCol "," stopRow
+
+        debug handle "`t " handleDesc[handle] " `t" startCol "," startRow " -> " stopCol "," stopRow
 
         for row in range(startRow, stopRow) {
 
             for col in range(startCol, stopCol) {
-                print col "," row
+                ; print col "," row
                 index := (row - 1) * columns + col
                 slots[index] := 1
             }
@@ -332,163 +359,87 @@ refresh() {
 
     }
 
-    ; bug in slots lists
-    for index, status in slots {
-        print index " = " status
+    rowDesc := "Slots :`n`n"
+
+    for row in range(1, rows) {
+        for col in range(1, columns) {
+            index := (row - 1) * columns + col
+            rowDesc := rowDesc " " slots[index]
+        }
+        rowDesc := rowDesc "`n"
     }
+
+    debug rowDesc
+
+
     available_zones := []
 
     ; Build available zone list
     for row in range(1, rows) {
 
-        print "--- Row " row " ---"
+        debug "--- Free areas in Row " row " ---"
 
         for col in range(1, columns) {
 
             slotIndex := (row - 1) * columns + col
             slotStatus := slots[slotIndex]
 
-            print "Check " col "," row " = " slotStatus
+            ; print "Check " col "," row " = " slotStatus
 
-            if ( slotStatus == 0) {
+            if (slotStatus == 0) {
                 startSlot := slotIndex
-                print "Slot " startSlot " is Free. startSlot " startSlot " columns " columns
 
-                ; extends zone right or bottom
 
-                for nextCol in range(startSlot, columns * row ) {
-                    print "nextcol " nextCol
-                    ; nextIndex := (row - 1) * columns + nextCol
+                debug "Slot " startSlot " to" ;. startSlot " startSlot " columns " columns
+
+                ; expand area to right on same row
+                for nextCol in range(startSlot, columns * row) {
+
                     nextIndex := nextCol
                     nextStatus := slots[nextIndex]
 
                     ; print "  next " nextCol "," row " = " nextStatus
 
-                    if ( nextStatus == 0 ) {
-                        print "  next " nextIndex " Free, add zone " startSlot nextIndex
+                    if (nextStatus == 0) {
+                        available_zones.Push(startSlot nextIndex)
+                        debug "  Slot " nextIndex ", add zone " startSlot nextIndex
                     } else {
-                        print "  next " nextIndex " used. break"
+                        debug "  Slot " nextIndex " used. break"
                         break
                     }
 
-
-                    
                 }
+                ; expand area to right on the row below !! only works with max 2 rows (as now)
+                if (row < rows) {
+
+                    ; print "Checking row below " startSlot + columns " " columns * (row + 1)
+
+                    for nextCol in range(startSlot + columns, columns * (row + 1)) {
+
+                        nextIndex := nextCol
+                        nextStatus := slots[nextIndex]
+
+                        ; print "  next " nextCol "," row " = " nextStatus
+
+                        if (nextStatus == 0) {
+                            available_zones.Push(startSlot nextIndex)
+                            debug "  Slot " nextIndex ", add zone " startSlot nextIndex
+                        } else {
+                            debug "  Slot " nextIndex " used. break"
+                            break
+                        }
+
+                    }
+                }
+
             }
-
-
-            ;     startSlot := slotIndex
-            ;     nextSlot := startSlot + 1
-
-            ;     print "Slot " startSlot " : Free, add zone '" startSlot "'"
-
-            ;     available_zones.Push(startSlot)
-
-            ;     ; print "Mod " Mod(nextSlot, 4)
-
-            ;     ; endOfRow := (nextSlot) // 4
-
-            ;     ; print "nextSlot " nextSlot " Mod " Mod(nextSlot, 4) ", endOfRow " endOfRow
-
-            ;     if ( nextSlot > slots.Length) {
-            ;         print "`t next slot " nextSlot ", break (end of slots)"
-            ;         break
-            ;     }
-
-            ;     if (Mod(nextSlot - 1 , 4) == 0) {
-            ;         print "`t next slot " nextSlot ", break (next row)"
-            ;         break
-            ;     }
-
-            ;     ; if (  endOfRow == 1 or endOfRow == 2 or nextSlot > columns * rows) {
-            ;     ;     print "`t next slot " nextSlot ", break (end of row)"
-            ;     ;     continue
-            ;     ; }
-
-            ;     ; if ( slots[nextSlot] == 1 )
-            ;     ;     print "`t next slot " nextSlot " : used, break (cannot extend)"
-
-            ;     print "| nextSlot " nextSlot " Mod " Mod(nextSlot - 1 , 4)
-            ;     ; add horiz areas
-            ;     while ( slots[nextSlot] == 0 ) {
-
-            ;         print "`t-> Slot " nextSlot " : Free, add zone '" startSlot nextSlot
-
-            ;         available_zones.Push(startSlot nextSlot)
-
-            ;         nextSlot := nextSlot + 1
-
-            ;         if ( nextSlot > columns * rows) {
-            ;             print "`t next slot " nextSlot ", break (end of slots)"
-            ;             break
-            ;         }
-
-            ;         if (Mod(nextSlot - 1 , 4) == 0) {
-            ;             print "`t next slot " nextSlot ", break (next row)"
-            ;             continue
-            ;         }
-
-            ;         print "| nextSlot " nextSlot " Mod " Mod(nextSlot - 1 , 4)
-
-
-            ;     }
-
-
         }
     }
 
 
-    ; available_zones := []
+    for key, value in available_zones
+        debug "available_zone " value
 
-
-    ; for i, cell in remaining_slots {
-    ;     print "slot " i " = "  cell
-    ; }
-
-    ; for i, cell in remaining_slots {
-    ;     ; print "Check zone " i " : "  cell
-
-    ;     if ( cell == 1 ) {
-    ;         print "Cell " i " : Used"
-    ;     } else if ( cell == 0 ) {
-    ;         startCol := i
-    ;         available_zones.Push(startCol)
-    ;         print "Cell " i " : Free, add zone '" startCol "'"
-
-
-    ;         Loop (columns - startCol) {
-    ;             ; row := A_Index - 1
-
-
-    ;             col := A_Index + startCol
-
-    ;             if ( remaining_slots[col] == 1) {
-    ;                 print "`tCol : "  A_Index + startCol " is occupied, break "
-    ;                 break
-    ;             }
-    ;             else
-    ;             {
-    ;                 available_zones.Push(startCol col)
-    ;                 print "`tCol : "  A_Index + startCol " is free, add zone '" startCol col "'"
-    ;             }
-    ;             ; expand cells
-    ;             ; Loop columns - startCol {
-    ;             ;     if ( remaining_slots[stopCell] == 0 ) {
-    ;             ;     stopCell := (row * columns) + startCell + A_Index
-    ;             ;     ; print "stopCell : "  stopCell
-    ;             ;     if ( remaining_slots[stopCell] == 0 ) {
-    ;             ;         print "`tOpen zone : "  startCell "" stopCell
-    ;             ;         available_zones.Push(startCell "" stopCell)
-    ;             ;     } else {
-    ;             ;         continue
-    ;             ;     }
-    ;             ; }
-    ;     }
-    ;    }
-    ; }
-
-    ; for key, value in  available_zones
-    ;      print  "available_zone " value
     ; for  zone, zoneValue in  areasToZones {
     ;     print "Check " zone " " zoneValue
 }
@@ -763,7 +714,6 @@ cellToZone(col, row, &zone) {
 
 getWindowArea(&area, window) {
 
-
     MinMax := WinGetMinMax(window)
 
     ; print "MinMax " MinMax
@@ -775,12 +725,7 @@ getWindowArea(&area, window) {
             area := "Max"
         case 0:
             getWindowZones(&startZone, &endZone, window)
-
-            if (startZone == endZone) {
-                area := startZone
-            } else {
-                area := startZone "" endZone
-            }
+            area := startZone "" endZone
             area := zonesToAreas["" area]
             ; print "`t " area
     }
@@ -970,6 +915,17 @@ print(message) {
     } catch {
 
     }
+}
+
+info(message) {
+    if (logLevel == "INFO")
+        print message
+}
+
+
+debug(message) {
+    if (logLevel == "DEBUG")
+        print message
 }
 
 DrawBorder(hwnd, color := 0xFF0000, enable := 1) {
