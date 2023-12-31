@@ -1,6 +1,6 @@
 ﻿#Requires AutoHotkey v2.0
 #SingleInstance Force
-#WinActivateForce
+#WinActivateForce ; send 32772
 #ErrorStdOut
 
 ListLines 0
@@ -15,6 +15,8 @@ DetectHiddenWindows false
 
 global handlesByPos := Map()
 global posByHandle := Map()
+
+global available_zones_by_size := Map()
 
 ; 1...
 ; 5...
@@ -117,33 +119,6 @@ areasToZones["CTRC"] := CTRC
 areasToZones["CBLC"] := CBLC
 areasToZones["CBRC"] := CBRC
 
-; 1   2   3   4
-; 1   2   4   8
-;
-; 5   6   7   8
-; 16 32  64 128
-;
-
-; global slots := Map()
-; slots["L"] := 17
-; slots["R"] := 136
-; slots["C"] := 102
-; slots["F"] := 255
-; slots["LS"] := 31
-; slots["RS"] := 204
-; slots["L3"] := 119
-; slots["R3"] := 238
-; slots["T"] := 15
-; slots["B"] := 240
-; slots["TL"] := 3
-; slots["TR"] := 12
-; slots["BL"] := 48
-; slots["BR"] := 192
-; slots["TLC"] := 1
-; slots["TRC"] := 8
-; slots["BLC"] := 16
-; slots["BRC"] := 128
-
 global zonesToAreas := Map()
 
 For key, value in areasToZones {
@@ -160,11 +135,11 @@ global slots := [0, 0, 0, 0, 0, 0, 0, 0]
 
 global lastActionWindow := 0
 
-global lastPromotedWindow := -1
-global lastPromotedWindowZone := -1
+; global lastPromotedWindow := -1
+; global lastPromotedWindowZone := -1
 
-global lastPositiodnById := 0 ; @TODO
-global lastPositionByProcess := 0 ; @TODO
+; global lastPositiodnById := 0 ; @TODO
+; global lastPositionByProcess := 0 ; @TODO
 
 
 global logLevel := "INFO"
@@ -179,16 +154,58 @@ Persistent ; This script will not exit automatically, even though it has nothing
 
 
 ShellMessage(wParam, lParam, msg, hwnd) {
-    ; print "event " wParam " " lParam " " msg " " hwnd
+    debug "[event] id " wParam " handle " lParam " msg " msg " " hwnd
     switch wParam {
-        case 32772: SetTimer(DrawActive, -1)
-            ; case 1: PlaceNewWindow(lParam)
+        ;
+        case 32772:
+            ; refresh
+            SetTimer(DrawActive, -1)
+            ; HSHELL_WINDOWCREATED
+        case 1:
+            ; refresh
+            PlaceNewWindow(lParam)
+            ; HSHELL_APPCOMMAND 12
+            ; HSHELL_REDRAW 6
+            ; if wParam = 1
+            ;     msg = HSHELL_WINDOWCREATED
+            ; if wParam = 2
+            ;     msg = HSHELL_WINDOWDESTROYED
+            ; if wParam = 3
+            ;     msg = HSHELL_ACTIVATESHELLWINDOW
+            ; if wParam = 4
+            ;     msg = HSHELL_WINDOWACTIVATED
+            ; if wParam = 5
+            ;     msg = HSHELL_GETMINRECT
+            ; if wParam = 6
+            ;     msg = HSHELL_REDRAW
+            ; if wParam = 7
+            ;     msg = HSHELL_TASKMAN
+            ; if wParam = 8
+            ;     msg = HSHELL_LANGUAGE
+            ; if wParam = 9
+            ;     msg = HSHELL_SYSMENU
+            ; if wParam = 10
+            ;     msg = HSHELL_ENDTASK
+            ; if wParam = 11
+            ;     msg = HSHELL_ACCESSIBILITYSTATE
+            ; if wParam = 12
+            ;     msg = HSHELL_APPCOMMAND
+            ; if wParam = 13
+            ;     msg = HSHELL_WINDOWREPLACED
+            ; if wParam = 14
+            ;     msg = HSHELL_WINDOWREPLACING
+            ; if wParam = 15
+            ;     msg = HSHELL_HIGHBIT
+            ; if wParam = 16
+            ;     msg = HSHELL_FLASH
+            ; if wParam = 17
+            ;     msg = HSHELL_RUDEAPPACTIVATED
     }
 }
 
 DrawActive() {
     ; print "draw active"
-    refresh
+    ; refresh
 
     ; border_color := "0x6238FF"
     border_color := "0x7ce38b"
@@ -217,16 +234,17 @@ DrawActive() {
     DrawBorder(window, border_color, 1)
 }
 
-refresh()
+; refresh()
 
-refresh() {
+refresh(exclude := "") {
 
+    info "Updating..."
     ; reset data
     global handlesByPos := Map()
     global posByHandle := Map()
     global handleDesc := Map()
+    global available_zones_by_size := Map()
 
-    ; print "refresh windows list"
     MonitorGetWorkArea(1, &wl, &wt, &wr, &wb)
     ; print "Monitor 1 WorkArea  l  " wl " t " wt " r " wr " b " wb
     ; MonitorGet(1, &Left, &Top, &Right, &Bottom)
@@ -242,139 +260,96 @@ refresh() {
 
     windowHandles := WinGetList(, , "Program Manager")
 
-    count := 0
+    handleIndex := 0
 
-    ; global slots
     global slots := [0, 0, 0, 0, 0, 0, 0, 0]
-    ; print "remaining_slots " remaining_slots
 
     for handle in windowHandles
     {
+        if (handle ~= exclude)
+            continue
 
         class := WinGetClass(handle)
 
+        ; ignore some system classes
         if (class ~= "WorkerW|Shell_TrayWnd|NarratorHelperWindow|Button|PseudoConsoleWindow")
             continue
 
-        ; Attempts to execute WinGetProcessName to exclude windows with no process
         try {
 
             process := WinGetProcessName(handle)
 
+            ; get 'approximate by threshold' window area
             getWindowArea(&area, handle)
 
+            ; handles by same area
             put(handlesByPos, area, handle)
+            ; area by handle
             posByHandle[handle] := area
-            handleDesc[handle] := "[" count "] '" area "' `t" process
+            ; handle short desc
+            handleDesc[handle] := "[" handleIndex "] '" area "' `t" process
 
-
-            ; print "areaZone " areaZone
-            ; if (area != "Min" and area != "Max") { ; min max are ignored
-
-            ;     areaZone := areasToZones.Get(area)
-            ;     print "OK 3"
-            ;     print count ": " area " '" process "' (" class ") Zone " areaZone
-
-
-            ; ;     print "zone -> " areaZone
-
-            ;     if (StrLen(areaZone) == 1) {
-            ;         ; print "Removing  slots[" area "] := 1 "
-            ;         remaining_slots[area] := 1
-            ;     } else {
-
-            ;         zoneToCell(&startCol, &startRow, SubStr(areaZone, 1, 1))
-            ;         zoneToCell(&stopCol, &stopRow, SubStr(areaZone, 2, 1))
-
-            ;         ; print "start stop " startCol " " startRow " " stopCol " " stopRow
-            ;         Loop stopRow - startRow + 1 {
-            ;             row := A_Index - 1
-            ;             ; print "Loop  " row
-            ;             Loop stopCol - startCol + 1 {
-
-            ;                 col := A_Index + startCol - 1
-            ;                 ; print "col  " col " row " row
-            ;                 index := ((row ) * columns) + col
-            ;                 remaining_slots[index] := 1
-            ;                 ; print "Removing  slots[" index "] := 1 "
-            ;             }
-            ;         }
-            ;     }
-            ; areaBits := Integer(slots[area])
-            ; remaining_slots := remaining_slots ^ areaBits
-            ; ; print "removing slots " areaBits
-            ; print "remaining_slots " remaining_slots
-            ; }
-            count := count + 1
+            handleIndex := handleIndex + 1
 
         }
-        catch as e  ; Handles the first error thrown by the block above.
-        { }
-
-
+        catch as e
+        {
+            ; do nothing
+        }
     }
-
 
     debug "Handles :"
 
+    ; filter handles to visible ones
     visibleHandles := Map()
 
     for handle, pos in posByHandle {
-
 
         debug handle "`t " handleDesc[handle]
 
         if (pos != "Min" and pos != "Max")
             visibleHandles.Set(handle, pos)
-    }
 
+    }
 
     debug "`nVisible Handles :"
 
-    ; Build slots usage status
+    ; Compute which slots in grid are occupied by visible handles
     for handle, pos in visibleHandles {
 
         zone := areasToZones[pos]
 
         zoneToCell(&startCol, &startRow, SubStr(zone, 1, 1))
-
-        if (StrLen(zone) == 1) {
-            stopCol := startCol
-            stopRow := startRow
-        } else {
-            zoneToCell(&stopCol, &stopRow, SubStr(zone, 2, 1))
-        }
-
+        zoneToCell(&stopCol, &stopRow, SubStr(zone, 2, 1))
 
         debug handle "`t " handleDesc[handle] " `t" startCol "," startRow " -> " stopCol "," stopRow
 
         for row in range(startRow, stopRow) {
 
             for col in range(startCol, stopCol) {
-                ; print col "," row
-                index := (row - 1) * columns + col
-                slots[index] := 1
+
+                handleIndex := (row - 1) * columns + col
+                slots[handleIndex] := 1
             }
         }
 
     }
 
+    ; build short handle description for debug purpose
     rowDesc := "Slots :`n`n"
 
     for row in range(1, rows) {
         for col in range(1, columns) {
-            index := (row - 1) * columns + col
-            rowDesc := rowDesc " " slots[index]
+            handleIndex := (row - 1) * columns + col
+            rowDesc := rowDesc " " slots[handleIndex]
         }
         rowDesc := rowDesc "`n"
     }
 
     debug rowDesc
 
-
+    ; Build available areas list
     available_zones := []
-
-    ; Build available zone list
     for row in range(1, rows) {
 
         debug "--- Free areas in Row " row " ---"
@@ -384,27 +359,22 @@ refresh() {
             slotIndex := (row - 1) * columns + col
             slotStatus := slots[slotIndex]
 
-            ; print "Check " col "," row " = " slotStatus
-
+            ; If a free slot is found, try to expand to contiguous free slots
             if (slotStatus == 0) {
                 startSlot := slotIndex
-
 
                 debug "Slot " startSlot " to" ;. startSlot " startSlot " columns " columns
 
                 ; expand area to right on same row
-                for nextCol in range(startSlot, columns * row) {
+                for nextIndex in range(startSlot, columns * row) {
 
-                    nextIndex := nextCol
                     nextStatus := slots[nextIndex]
-
-                    ; print "  next " nextCol "," row " = " nextStatus
 
                     if (nextStatus == 0) {
                         available_zones.Push(startSlot nextIndex)
                         debug "  Slot " nextIndex ", add zone " startSlot nextIndex
                     } else {
-                        debug "  Slot " nextIndex " used. break"
+                        ; debug "  Slot " nextIndex " used. break"
                         break
                     }
 
@@ -414,18 +384,15 @@ refresh() {
 
                     ; print "Checking row below " startSlot + columns " " columns * (row + 1)
 
-                    for nextCol in range(startSlot + columns, columns * (row + 1)) {
+                    for nextIndex in range(startSlot + columns, columns * (row + 1)) {
 
-                        nextIndex := nextCol
                         nextStatus := slots[nextIndex]
-
-                        ; print "  next " nextCol "," row " = " nextStatus
 
                         if (nextStatus == 0) {
                             available_zones.Push(startSlot nextIndex)
                             debug "  Slot " nextIndex ", add zone " startSlot nextIndex
                         } else {
-                            debug "  Slot " nextIndex " used. break"
+                            ; debug "  Slot " nextIndex " used. break"
                             break
                         }
 
@@ -437,12 +404,77 @@ refresh() {
     }
 
 
-    for key, value in available_zones
-        debug "available_zone " value
+    ; for index, zone in available_zones {
+    ;     info index " " zone
+    ; }
 
-    ; for  zone, zoneValue in  areasToZones {
-    ;     print "Check " zone " " zoneValue
+    ; available areas by size
+    for index, zone in available_zones {
+        zoneToCell(&startCol, &startRow, SubStr(zone, 1, 1))
+        zoneToCell(&stopCol, &stopRow, SubStr(zone, 2, 1))
+        size := (stopCol - startCol + 1) * (stopRow - startRow + 1)
+        info "Area " zone " size " size
+        put(available_zones_by_size, size, zone)
+    }
+
+    ; dump(available_zones_by_size)
+
 }
+
+PlaceNewWindow(handle) {
+    ; print "Placing " handle
+    ; exclude new window from actual windows ?
+
+    refresh(handle)
+
+    maxAvailableSize := -1
+    
+    for size, zone in available_zones_by_size {
+        if (size > maxAvailableSize)
+            maxAvailableSize := size
+    }
+
+
+    rightest := -1
+
+    if (maxAvailableSize != -1) {
+        debug "Max available size " maxAvailableSize
+        areas := available_zones_by_size[maxAvailableSize]
+
+
+        for i, area in areas {
+            if (area > rightest)
+                rightest := area
+        }
+
+        debug "rightest Area " rightest
+
+    }
+
+
+    WinWait handle
+    ; class := WinGetClass(handle)
+
+    ; getWindowArea(&area, handle)
+
+
+    ; do not use all slots if screen is empty
+    if (rightest == F)
+        rightest := C
+
+    if (rightest != -1)
+        snapTo(rightest, handle)
+
+}
+
+
+F3:: PlaceNewWindow(WinGetId("A"))
+F2:: refresh()
+
+;
+; Helpers
+;
+
 
 range(start, stop) {
     range := []
@@ -452,51 +484,6 @@ range(start, stop) {
     }
     return range
 }
-
-; PlaceNewWindow(handle) {
-;     ; print "Placing " handle
-
-;     WinWait handle
-;     class := WinGetClass(handle)
-
-;     ; Attempts to execute WinGetProcessName to exclude windows with no process
-;     try {
-
-;         process := WinGetProcessName(handle)
-
-;         ; print count ": " process
-
-;         ; getWindowArea(&area, handle)
-
-;         ; put(handlesByPos, area, handle)
-
-;         ; posByHandle.Set(handle, area)
-
-;         title := WinGetTitle(handle)
-;         print "Placing " process "' (" class ")"
-;         print "remaining_slots " remaining_slots
-
-
-;         ; for key, value in slots {
-;         ;     available := (  value ~ remaining_slots )
-;         ;     ; if (available)
-;         ;         print "is available slot : " key ", " available
-
-
-;         ; }
-;         ; count := count + 1
-
-;     }
-;     catch as e  ; Handles the first error thrown by the block above.
-;     { }
-
-
-;     dump(handlesByPos)
-; }
-
-
-; F2::PlaceNewWindow(WinGetId("A"))
-F2:: refresh()
 
 
 put(map, key, value) {
@@ -531,59 +518,6 @@ hasWindowsOnSamePosition(window) {
     }
     return false
 }
-
-; SortWindows() {
-
-;     ;     DetectHiddenWindows false
-
-;     windowHandles := WinGetList(, , "Program Manager")
-
-;     count := 0
-
-;     for handle in windowHandles
-;     {
-
-;         class := WinGetClass(handle)
-
-;         if (class ~= "WorkerW|Shell_TrayWnd|NarratorHelperWindow|Button|PseudoConsoleWindow")
-;             continue
-
-;         ; Attempts to execute WinGetProcessName to exclude windows with no process
-;         try {
-
-;             process := WinGetProcessName(handle)
-
-;             ; print count ": " process
-
-;             getWindowArea(&area, handle)
-
-;             put(handlesByPos, area, handle)
-
-;             posByHandle.Set(handle, area)
-
-;             ; title := WinGetTitle(handle)
-;             ; print count ": " area " '" process "' (" class ")"
-
-;             count := count + 1
-
-;         }
-;         catch as e  ; Handles the first error thrown by the block above.
-;         { }
-
-
-;     }
-; }
-
-
-; F1::getWindowArea2(&startZone,&endZone,WinGetId("A"))
-; F1:: snapToZone(1, 2)
-; F2:: snapToZone(2, 2)
-; F3:: snapToZone(3, 3)
-; F4:: snapToZone(4, 4)
-; F5:: snapToZone(5, 5)
-; F6:: snapToZone(6, 6)
-; F7:: snapToZone(7, 7)
-; F8:: snapToZone(8, 8)
 
 nextModZone(&zoneStart, &zoneStop) {
     switch zoneStart "" zoneStop {
@@ -739,8 +673,6 @@ getWindowZones(&startZone, &endZone, window) {
     x1 := x
     y1 := y
 
-    ; x2 := x + width
-    ; y2 := y + height
 
     startCol := Round(x1 / cellWidth) + 1
     startRow := Round(y1 / cellHeight) + 1
@@ -748,13 +680,16 @@ getWindowZones(&startZone, &endZone, window) {
     stopCol := startCol + Round(width / cellWidth) - 1
     stopRow := startRow + Round(height / cellHeight) - 1
 
-    ; print "x1 " x1 " y1 " y1 " x2  " x2 " y2 " y2
+
     ; print "x1 " Round(x1 / cellWidth) " y1 " Round(y1 / cellHeight) " w  " Round(width / cellWidth) " h "  Round(height / cellHeight)
 
     ; print "startCol " startCol " startRow " startRow " stopCol  " stopCol " stopRow "  stopRow
 
     cellToZone(startCol, startRow, &startZone)
     cellToZone(stopCol, stopRow, &endZone)
+
+    ; print "x1 " x1 " y1 " y1 " width  " width " height " height
+    ; print "x1 " originX + (startCol - 1 ) * cellWidth " y1 " originY + ( startRow -1 ) * cellHeight ; " width  " width " height " height
 }
 
 ;
@@ -908,7 +843,9 @@ WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
 ; #!numpad8:: snapToZone(1, 7)
 ; #!numpad9:: snapToZone(5, 7)
 
-
+;
+; Log helpers
+;
 print(message) {
     try {
         FileAppend message "`n", "*"
