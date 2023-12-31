@@ -3,6 +3,15 @@
 #WinActivateForce ; send 32772
 #ErrorStdOut
 
+;
+; Debug
+;
+
+global logLevel := "INFO"
+
+#Include helpers.ahk
+#Include constants.ahk
+
 ListLines 0
 SendMode "Input"
 SetWorkingDir A_ScriptDir
@@ -15,134 +24,21 @@ DetectHiddenWindows false
 
 global handlesByPos := Map()
 global posByHandle := Map()
-
 global available_zones_by_size := Map()
 
-; 1...
-; 5...
-global L := 15
-; ...4
-; ...8
-global R := 48
-; .23.
-; .67.
-global C := 27
-; 1234
-; 5678
-global F := 18
-; 1234
-; 5678
-global LS := 16
-; 12..
-; 56..
-global RS := 38
-; ..34
-; ..78
-global L3 := 17
-; 123.
-; 567.
-global R3 := 28
-; 1234
-; 5678
-global T := 14
-; 1234
-; ....
-global B := 58
-; ....
-; 5678
-global CT := 23
-; .23.
-; ....
-global CB := 67
-; ....
-; .67.
-global TL := 12
-; 12..
-; ....
-global TR := 34
-; ..34
-; ....
-global BL := 56
-; ....
-; 56..
-global BR := 78
-; ....
-; ..78
-global TLC := 11
-; 1...
-; ....
-global TRC := 44
-; ...4
-; ....
-global BLC := 55
-; ....
-; 5...
-global BRC := 88
-; ....
-; ...8
-global CTLC := 22
-; 1...
-; ....
-global CTRC := 33
-; ...4
-; ....
-global CBLC := 66
-; ....
-; 5...
-global CBRC := 77
-; ....
-; ...8
-
-global areasToZones := Map()
-areasToZones["L"] := L
-areasToZones["R"] := R
-areasToZones["C"] := C
-areasToZones["F"] := F
-areasToZones["LS"] := LS
-areasToZones["RS"] := RS
-areasToZones["L3"] := L3
-areasToZones["R3"] := R3
-areasToZones["T"] := T
-areasToZones["B"] := B
-areasToZones["CT"] := CT
-areasToZones["CB"] := CB
-areasToZones["TL"] := TL
-areasToZones["TR"] := TR
-areasToZones["BL"] := BL
-areasToZones["BR"] := BR
-areasToZones["TLC"] := TLC
-areasToZones["TRC"] := TRC
-areasToZones["BLC"] := BLC
-areasToZones["BRC"] := BRC
-areasToZones["CTLC"] := CTLC
-areasToZones["CTRC"] := CTRC
-areasToZones["CBLC"] := CBLC
-areasToZones["CBRC"] := CBRC
-
-global zonesToAreas := Map()
-
-For key, value in areasToZones {
-    zonesToAreas["" value] := key
-    ; print value " " zonesToAreas["" value]
-}
-
+;
+; Config
+;
 
 global spacing := 4
 global columns := 4
 global rows := 2
 
+
+
 global slots := [0, 0, 0, 0, 0, 0, 0, 0]
 
-global lastActionWindow := 0
 
-; global lastPromotedWindow := -1
-; global lastPromotedWindowZone := -1
-
-; global lastPositiodnById := 0 ; @TODO
-; global lastPositionByProcess := 0 ; @TODO
-
-
-global logLevel := "INFO"
 
 myGui := Gui()
 myGui.Opt("+LastFound")
@@ -155,11 +51,14 @@ Persistent ; This script will not exit automatically, even though it has nothing
 
 ShellMessage(wParam, lParam, msg, hwnd) {
     debug "[event] id " wParam " handle " lParam " msg " msg " " hwnd
+    
+    ; refresh
+
     switch wParam {
         ;
         case 32772:
             ; refresh
-            SetTimer(DrawActive, -1)
+            SetTimer(DrawActive, -1) ; run once
             ; HSHELL_WINDOWCREATED
         case 1:
             ; refresh
@@ -168,7 +67,7 @@ ShellMessage(wParam, lParam, msg, hwnd) {
             ; HSHELL_REDRAW 6
             ; if wParam = 1
             ;     msg = HSHELL_WINDOWCREATED
-            ; if wParam = 2
+            ; if wParam = 2q
             ;     msg = HSHELL_WINDOWDESTROYED
             ; if wParam = 3
             ;     msg = HSHELL_ACTIVATESHELLWINDOW
@@ -204,11 +103,11 @@ ShellMessage(wParam, lParam, msg, hwnd) {
 }
 
 DrawActive() {
-    ; print "draw active"
-    ; refresh
+    
 
     ; border_color := "0x6238FF"
     border_color := "0x7ce38b"
+
     ; Start by removing the borders from all windows, since we do not know which window was previously active
     windowHandles := WinGetList(, , ,)
     For handle in windowHandles
@@ -226,9 +125,6 @@ DrawActive() {
     }
     ;  border_color := "0xf9cbe5" ; pink
     ;  border_color := "0x79e1df" ; aqua
-
-    ; global gfx
-    ; gfx.DrawLine(brush, 100,100,1000,1000)
 
 
     DrawBorder(window, border_color, 1)
@@ -413,7 +309,7 @@ refresh(exclude := "") {
         zoneToCell(&startCol, &startRow, SubStr(zone, 1, 1))
         zoneToCell(&stopCol, &stopRow, SubStr(zone, 2, 1))
         size := (stopCol - startCol + 1) * (stopRow - startRow + 1)
-        info "Area " zone " size " size
+        ; info "Area " zone " size " size
         put(available_zones_by_size, size, zone)
     }
 
@@ -428,7 +324,7 @@ PlaceNewWindow(handle) {
     refresh(handle)
 
     maxAvailableSize := -1
-    
+
     for size, zone in available_zones_by_size {
         if (size > maxAvailableSize)
             maxAvailableSize := size
@@ -475,22 +371,6 @@ F2:: refresh()
 ; Helpers
 ;
 
-
-range(start, stop) {
-    range := []
-    loops := stop - start + 1
-    loop loops {
-        range.Push(start + A_Index - 1)
-    }
-    return range
-}
-
-
-put(map, key, value) {
-    values := map.Get(key, [])
-    values.Push(value)
-    map.Set(key, values)
-}
 
 dump(map) {
     For key, values in map {
@@ -609,11 +489,12 @@ down(window := WinGetId("A")) {
 }
 
 snapTo(area, window := WinGetId("A")) {
+
     snapToZone(SubStr(area, 1, 1), SubStr(area, 2, 1), window)
 }
 
 snapToZone(zoneStart, zoneStop, window := WinGetId("A")) {
-
+    refresh
     getWindowZones(&currentStartZone, &currentEndZone, window)
 
     if (currentStartZone == zoneStart and currentEndZone == zoneStop) {
@@ -644,7 +525,6 @@ zoneToCell(&col, &row, zone) {
 cellToZone(col, row, &zone) {
     zone := col + ((row - 1) * columns)
 }
-
 
 getWindowArea(&area, window) {
 
@@ -714,7 +594,6 @@ getWindowZones(&startZone, &endZone, window) {
 ;     Sleep 5
 ; }
 
-; growX(repeat := 1) {
 ;     Send "^!#{right " repeat "}"
 ;     Sleep 5
 ; }
@@ -809,11 +688,11 @@ WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
 ; Down & Right:: snapToZone(8, 8)
 
 
-#numpad1:: snapToZone(5, 5)
+#numpad1:: snapTo(BLC)
 #numpad2:: snapToZone(6, 7)
 #numpad3:: snapToZone(8, 8)
 #numpad4:: snapToZone(1, 5)
-#numpad5:: snapToZone(2, 7)
+#numpad5:: snapTo(C)
 #numpad6:: snapToZone(4, 8)
 #numpad7:: snapToZone(1, 1)
 #numpad8:: snapToZone(2, 3)
@@ -842,28 +721,6 @@ WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
 ; #!numpad7:: snapToZone(1, 3)
 ; #!numpad8:: snapToZone(1, 7)
 ; #!numpad9:: snapToZone(5, 7)
-
-;
-; Log helpers
-;
-print(message) {
-    try {
-        FileAppend message "`n", "*"
-    } catch {
-
-    }
-}
-
-info(message) {
-    if (logLevel == "INFO")
-        print message
-}
-
-
-debug(message) {
-    if (logLevel == "DEBUG")
-        print message
-}
 
 DrawBorder(hwnd, color := 0xFF0000, enable := 1) {
     static DWMWA_BORDER_COLOR := 34
