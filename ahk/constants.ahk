@@ -1,5 +1,26 @@
 print "Loading constants.ahk"
 
+
+HSHELL_WINDOWCREATED := 1
+HSHELL_WINDOWDESTROYED := 2
+HSHELL_ACTIVATESHELLWINDOW := 3
+HSHELL_WINDOWACTIVATED := 4
+HSHELL_GETMINRECT := 5
+HSHELL_REDRAW := 6
+HSHELL_TASKMAN := 7
+HSHELL_LANGUAGE := 8
+HSHELL_SYSMENU := 9
+HSHELL_ENDTASK := 10
+HSHELL_ACCESSIBILITYSTATE := 11
+HSHELL_APPCOMMAND := 12
+HSHELL_WINDOWREPLACED := 13
+HSHELL_WINDOWREPLACING := 14
+HSHELL_HIGHBIT := 15
+HSHELL_FLASH := 16
+HSHELL_RUDEAPPACTIVATED := 17
+HSHELL_RUDEAPPACTIVATED_BIS := 32772
+
+
 ; 1...
 ; 5...
 global L := 15
@@ -75,35 +96,34 @@ global CBRC := 77
 ; ....
 ; ...8
 
-global areasToZones := Map()
-areasToZones["L"] := L
-areasToZones["R"] := R
-areasToZones["C"] := C
-areasToZones["F"] := F
-areasToZones["LS"] := LS
-areasToZones["RS"] := RS
-areasToZones["L3"] := L3
-areasToZones["R3"] := R3
-areasToZones["T"] := T
-areasToZones["B"] := B
-areasToZones["CT"] := CT
-areasToZones["CB"] := CB
-areasToZones["TL"] := TL
-areasToZones["TR"] := TR
-areasToZones["BL"] := BL
-areasToZones["BR"] := BR
-areasToZones["TLC"] := TLC
-areasToZones["TRC"] := TRC
-areasToZones["BLC"] := BLC
-areasToZones["BRC"] := BRC
-areasToZones["CTLC"] := CTLC
-areasToZones["CTRC"] := CTRC
-areasToZones["CBLC"] := CBLC
-areasToZones["CBRC"] := CBRC
+global namedAreas := Map()
+namedAreas["L"] := L
+namedAreas["R"] := R
+namedAreas["C"] := C
+namedAreas["F"] := F
+namedAreas["LS"] := LS
+namedAreas["RS"] := RS
+namedAreas["L3"] := L3
+namedAreas["R3"] := R3
+namedAreas["T"] := T
+namedAreas["B"] := B
+namedAreas["CT"] := CT
+namedAreas["CB"] := CB
+namedAreas["TL"] := TL
+namedAreas["TR"] := TR
+namedAreas["BL"] := BL
+namedAreas["BR"] := BR
+namedAreas["TLC"] := TLC
+namedAreas["TRC"] := TRC
+namedAreas["BLC"] := BLC
+namedAreas["BRC"] := BRC
+namedAreas["CTLC"] := CTLC
+namedAreas["CTRC"] := CTRC
+namedAreas["CBLC"] := CBLC
+namedAreas["CBRC"] := CBRC
 
-global zonesToAreas := Map()
-
-For key, value in areasToZones {
-    zonesToAreas["" value] := key
-    ; print value " " zonesToAreas["" value]
+global areasToName := Map()
+for key, value in namedAreas {
+    areasToName["" value] :=  key
+    ; print value " " areasToName["" value]
 }

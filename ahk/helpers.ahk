@@ -2,6 +2,7 @@ print "Loading helpers.ahk"
 ;
 ; Log helpers
 ;
+global logLevel := "INFO"
 print(message) {
     try {
         FileAppend message "`n", "*"

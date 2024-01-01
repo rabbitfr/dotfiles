@@ -10,6 +10,7 @@
 global logLevel := "INFO"
 
 #Include helpers.ahk
+#Include Tiler.ahk
 #Include constants.ahk
 
 ListLines 0
@@ -18,9 +19,8 @@ SetWorkingDir A_ScriptDir
 KeyHistory 0
 ; DetectHiddenWindows true
 DetectHiddenWindows false
-; #Include CGdip.ahk
+#Include CGdip.ahk
 
-;  CGdip.Startup
 
 global handlesByPos := Map()
 global posByHandle := Map()
@@ -35,9 +35,7 @@ global columns := 4
 global rows := 2
 
 
-
 global slots := [0, 0, 0, 0, 0, 0, 0, 0]
-
 
 
 myGui := Gui()
@@ -51,14 +49,14 @@ Persistent ; This script will not exit automatically, even though it has nothing
 
 ShellMessage(wParam, lParam, msg, hwnd) {
     debug "[event] id " wParam " handle " lParam " msg " msg " " hwnd
-    
+
     ; refresh
 
     switch wParam {
         ;
         case 32772:
             ; refresh
-            SetTimer(DrawActive, -1) ; run once
+            ; SetTimer(DrawActive, -1) ; run once
             ; HSHELL_WINDOWCREATED
         case 1:
             ; refresh
@@ -102,8 +100,9 @@ ShellMessage(wParam, lParam, msg, hwnd) {
     }
 }
 
+
 DrawActive() {
-    
+
 
     ; border_color := "0x6238FF"
     border_color := "0x7ce38b"
@@ -213,7 +212,7 @@ refresh(exclude := "") {
     ; Compute which slots in grid are occupied by visible handles
     for handle, pos in visibleHandles {
 
-        zone := areasToZones[pos]
+        zone := namedAreas[pos]
 
         zoneToCell(&startCol, &startRow, SubStr(zone, 1, 1))
         zoneToCell(&stopCol, &stopRow, SubStr(zone, 2, 1))
@@ -366,6 +365,60 @@ PlaceNewWindow(handle) {
 
 F3:: PlaceNewWindow(WinGetId("A"))
 F2:: refresh()
+; F6:: test()
+
+; test() {
+;     pToken := CGdip.Startup()
+
+;     g1 := Gui()
+;     g1.Opt("-Caption +E0x80000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs")
+;     g1.Show("NA")
+;     ; Get a handle to this window we have created in order to update it later
+;     hwnd1 := WinExist()
+
+;     Width := 300, Height := 200
+
+;     hbm := CGdip.Bitmap.Create(Width, Height)
+
+;     hdc := CreateCompatibleDC()
+
+;     obm := SelectObject(hdc, hbm)
+
+;     G := CGdip.Graphics.FromHDC(hdc)
+
+;     G.SetSmoothingMode(4)
+
+;     pBrush := CGdip.Brush.SolidFill(0x77000000)
+
+
+;     G.FillRoundedRectangle(pBrush,0,0,Width,Height,20)
+
+;     pBrush.__Delete()
+
+;     UpdateLayeredWindow(hwnd1, hdc, 500,500,Width,Height)
+
+;     OnMessage(0x201, WM_LBUTTONDOWN)`
+
+;     SelectObject(hdc,obm)
+
+;     DeleteDC(hdc)
+
+;     G.__Delete()
+
+
+; }
+
+
+; WM_LBUTTONDOWN(wParam, lParam, msg, hwnd)
+; {
+; 	PostMessage 0xA1, 2
+; }
+; ExitFunc(ExitReason, ExitCode)
+; {
+;    global
+;    ; gdi+ may now be shutdown on exiting the program
+;    CGdip.Shutdown()
+; }
 
 ;
 ; Helpers
@@ -540,7 +593,7 @@ getWindowArea(&area, window) {
         case 0:
             getWindowZones(&startZone, &endZone, window)
             area := startZone "" endZone
-            area := zonesToAreas["" area]
+            area := areasToName["" area]
             ; print "`t " area
     }
 }
@@ -688,15 +741,206 @@ WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
 ; Down & Right:: snapToZone(8, 8)
 
 
-#numpad1:: snapTo(BLC)
-#numpad2:: snapToZone(6, 7)
-#numpad3:: snapToZone(8, 8)
-#numpad4:: snapToZone(1, 5)
-#numpad5:: snapTo(C)
-#numpad6:: snapToZone(4, 8)
-#numpad7:: snapToZone(1, 1)
-#numpad8:: snapToZone(2, 3)
-#numpad9:: snapToZone(4, 4)
+wm := Tiler()
+; wm.update()
+
+hiddenEventReceiver := Gui()
+hiddenEventReceiver.Opt("+LastFound")
+receiver := WinExist()
+
+DllCall("RegisterShellHookWindow", "UInt", receiver)
+
+MsgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
+OnMessage(MsgNum, onEvent)
+
+global lastEventId := -1
+global lastEventHandle := -1
+
+onEvent(eventId, eventHandle, msg, ignore) {
+
+    print "Event " eventId "  p " eventHandle ; " " msg " " handle
+
+
+    global lastEventId
+    global lastEventHandle
+
+    if (eventId != lastEventId or eventHandle != lastEventHandle) {
+        ; do nothing
+        lastEventId := eventId
+        lastEventHandle := eventHandle
+    } else {
+        ; print "Skip event"
+        return ; ignore
+    }
+
+    switch eventId {
+
+        case HSHELL_ACTIVATESHELLWINDOW:
+        case HSHELL_GETMINRECT:
+        case HSHELL_REDRAW: ; 6
+        case HSHELL_TASKMAN:
+        case HSHELL_LANGUAGE:
+        case HSHELL_SYSMENU:
+        case HSHELL_ENDTASK:
+        case HSHELL_ACCESSIBILITYSTATE:
+        case HSHELL_APPCOMMAND:
+        case HSHELL_WINDOWREPLACED:
+        case HSHELL_WINDOWREPLACING:
+        case HSHELL_HIGHBIT:
+        case HSHELL_FLASH: ; 16
+        case HSHELL_WINDOWCREATED: ; 1
+            wm.update
+        case HSHELL_WINDOWDESTROYED: ; 2
+            wm.update
+        case HSHELL_WINDOWACTIVATED: ; 4
+            wm.update
+        case HSHELL_RUDEAPPACTIVATED,
+            HSHELL_RUDEAPPACTIVATED_BIS: ; 32772
+            wm.update
+            wm.updateActiveWindow()
+    }
+}
+
+ExcludeScriptMessages := "1"	; 0 to include
+
+; HookWinEvent()
+
+HookWinEvent() {
+    global
+    HookProcAdr := CallbackCreate(CaptureWinEvent, "F")
+    dwFlags := (0x0000 | 0x0002 | 0x0001)
+    hWinEventHook := SetWinEventHook(0x800B, 0x800B, 0, HookProcAdr, 0, 0, dwFlags)
+}
+
+SetWinEventHook(eventMin, eventMax, hmodWinEventProc, lpfnWinEventProc, idProcess, idThread, dwFlags) {
+    DllCall("ole32\CoInitialize", "Uint", 0)
+    return DllCall("SetWinEventHook", "Uint", eventMin, "Uint", eventMax, "Uint", hmodWinEventProc, "Uint", lpfnWinEventProc, "Uint", idProcess, "Uint", idThread, "Uint", dwFlags)
+}
+
+
+CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dwmsEventTime) {
+    ; Global PauseStatus := -1 , WM_VSCROLL := -1  , SB_BOTTOM := -1 , ogLV_WMessages:= -1 , winMessageList:= -1
+
+    if (hWnd == 0)
+        return
+
+
+    if (Event != 32779)
+        return
+
+    If WinExist("ahk_id " hWnd) {
+     
+        try {
+            process := WinGetProcessName(hWnd)
+            print "WinMove : " process " " WinGetTitle("ahk_id " hWnd)
+        } catch as e {
+
+        }
+    } else {
+        return
+    }
+
+    ; If WinExist( hWnd) {
+    ;     print hWnd "Exists !"
+    ;     print WinGetTitle(hWnd)
+    ; }
+
+    Event += 0
+    message := ""
+
+
+    if (Event = 1)
+        Message := "EVENT_SYSTEM_SOUND"
+    else if (Event = 2)
+        Message := "EVENT_SYSTEM_ALERT"
+    else if (Event = 3)
+        Message := "EVENT_SYSTEM_FOREGROUND"
+    else if (Event = 4)
+        Message := "EVENT_SYSTEM_MENUSTART"
+    else if (Event = 5)
+        Message := "EVENT_SYSTEM_MENUEND"
+    else if (Event = 6)
+        Message := "EVENT_SYSTEM_MENUPOPUPSTART"
+    else if (Event = 7)
+        Message := "EVENT_SYSTEM_MENUPOPUPEND"
+    else if (Event = 8)
+        Message := "EVENT_SYSTEM_CAPTURESTART"
+    else if (Event = 9)
+        Message := "EVENT_SYSTEM_CAPTUREEND"
+    else if (Event = 10)
+        Message := "EVENT_SYSTEM_MOVESIZESTART"
+    else if (Event = 11)
+        Message := "EVENT_SYSTEM_MOVESIZEEND"
+    else if (Event = 12)
+        Message := "EVENT_SYSTEM_CONTEXTHELPSTART"
+    else if (Event = 13)
+        Message := "EVENT_SYSTEM_CONTEXTHELPEND"
+    else if (Event = 14)
+        Message := "EVENT_SYSTEM_DRAGDROPSTART"
+    else if (Event = 15)
+        Message := "EVENT_SYSTEM_DRAGDROPEND"
+    else if (Event = 16)
+        Message := "EVENT_SYSTEM_DIALOGSTART"
+    else if (Event = 17)
+        Message := "EVENT_SYSTEM_DIALOGEND"
+    else if (Event = 18)
+        Message := "EVENT_SYSTEM_SCROLLINGSTART"
+    else if (Event = 19)
+        Message := "EVENT_SYSTEM_SCROLLINGEND"
+    else if (Event = 20)
+        Message := "EVENT_SYSTEM_SWITCHSTART"
+    else if (Event = 21)
+        Message := "EVENT_SYSTEM_SWITCHEND"
+    else if (Event = 22)
+        Message := "EVENT_SYSTEM_MINIMIZESTART"
+    else if (Event = 23)
+        Message := "EVENT_SYSTEM_MINIMIZEEND"
+    else if (Event = 32779)
+        Message := "EVENT_OBJECT_LOCATIONCHANGE"
+
+    ; print "Event " Event " Message " Message " hWnd " hWnd " idObject " idObject " idChild " idChild " dwEventThread " dwEventThread " dwmsEventTime " dwmsEventTime
+
+    Sleep(150)
+    EventHex := Event
+
+    ; if(message!=""){
+    ;     try{
+    ;         if (myGui.filterMsg.Has(message) and myGui.filterMsg[message]=1){
+    ;             return
+    ;         }
+    ;         	; give a little time for WinGetTitle/WinGetActiveTitle functions, otherwise they return blank
+    ;         WinhWnd := WinGetTitle(hWnd) = "" ? DllCall("user32\GetAncestor", "Ptr", hWnd, "UInt", 1, "Ptr") : hWnd
+    ;         phWnd := WinGetPID(WinhWnd)
+    ;         if (myGui.ExcludeOwnMessages and myGui.phwnd+0=phWnd){
+    ;             return
+    ;         }
+    ;         WinClass := WinGetClass(hWnd)
+    ;         ogLV_WMessages.Add("", format("0x{:x}",hWnd), format("0x{:x}",idObject), format("0x{:x}",idChild), WinGetTitle(hWnd), WinClass, format("0x{:x}",EventHex), Message,WinGetProcessName(hWnd),format("0x{:x}", phWnd),WinGetTitle(WinhWnd))
+
+    ;         if (!WinActive(myGui)){
+    ;             SendMessage(WM_VSCROLL, SB_BOTTOM, 0, "SysListView321", "ahk_id " myGui.Hwnd)
+    ;         }
+    ;     }
+    ; }
+}
+
+
+onTest(eventId, eventHandle, msg, ignore) {
+    print "plop"
+}
+
+Persistent
+
+
+#numpad1:: wm.snapTo(BLC)
+#numpad2:: wm.snapTo(CB)
+#numpad3:: wm.snapTo(BRC)
+#numpad4:: wm.snapTo(L)
+#numpad5:: wm.snapTo(C)
+#numpad6:: wm.snapTo(R)
+#numpad7:: wm.snapTo(TLC)
+#numpad8:: wm.snapTo(CT)
+#numpad9:: wm.snapTo(TRC)
 
 #Left:: left()
 #Right:: right()
