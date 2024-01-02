@@ -1,4 +1,4 @@
-print "Loading constants.ahk"
+print "Loading constants.ahk`n"
 
 
 HSHELL_WINDOWCREATED := 1

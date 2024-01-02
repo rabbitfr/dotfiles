@@ -8,7 +8,7 @@
 ;
 
 global logLevel := "INFO"
-
+SetWinDelay(1)
 #Include helpers.ahk
 #Include Tiler.ahk
 #Include constants.ahk
@@ -38,96 +38,96 @@ global rows := 2
 global slots := [0, 0, 0, 0, 0, 0, 0, 0]
 
 
-myGui := Gui()
-myGui.Opt("+LastFound")
-hWnd := WinExist()
-DllCall("RegisterShellHookWindow", "UInt", hWnd)
-MsgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
-OnMessage(MsgNum, ShellMessage)
-Persistent ; This script will not exit automatically, even though it has nothing to do.
+; myGui := Gui()
+; myGui.Opt("+LastFound")
+; hWnd := WinExist()
+; DllCall("RegisterShellHookWindow", "UInt", hWnd)
+; MsgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
+; OnMessage(MsgNum, ShellMessage)
+; Persistent ; This script will not exit automatically, even though it has nothing to do.
 
 
-ShellMessage(wParam, lParam, msg, hwnd) {
-    debug "[event] id " wParam " handle " lParam " msg " msg " " hwnd
+; ShellMessage(wParam, lParam, msg, hwnd) {
+;     ; debug "[event] id " wParam " handle " lParam " msg " msg " " hwnd
 
-    ; refresh
+;     ; refresh
 
-    switch wParam {
-        ;
-        case 32772:
-            ; refresh
-            ; SetTimer(DrawActive, -1) ; run once
-            ; HSHELL_WINDOWCREATED
-        case 1:
-            ; refresh
-            PlaceNewWindow(lParam)
-            ; HSHELL_APPCOMMAND 12
-            ; HSHELL_REDRAW 6
-            ; if wParam = 1
-            ;     msg = HSHELL_WINDOWCREATED
-            ; if wParam = 2q
-            ;     msg = HSHELL_WINDOWDESTROYED
-            ; if wParam = 3
-            ;     msg = HSHELL_ACTIVATESHELLWINDOW
-            ; if wParam = 4
-            ;     msg = HSHELL_WINDOWACTIVATED
-            ; if wParam = 5
-            ;     msg = HSHELL_GETMINRECT
-            ; if wParam = 6
-            ;     msg = HSHELL_REDRAW
-            ; if wParam = 7
-            ;     msg = HSHELL_TASKMAN
-            ; if wParam = 8
-            ;     msg = HSHELL_LANGUAGE
-            ; if wParam = 9
-            ;     msg = HSHELL_SYSMENU
-            ; if wParam = 10
-            ;     msg = HSHELL_ENDTASK
-            ; if wParam = 11
-            ;     msg = HSHELL_ACCESSIBILITYSTATE
-            ; if wParam = 12
-            ;     msg = HSHELL_APPCOMMAND
-            ; if wParam = 13
-            ;     msg = HSHELL_WINDOWREPLACED
-            ; if wParam = 14
-            ;     msg = HSHELL_WINDOWREPLACING
-            ; if wParam = 15
-            ;     msg = HSHELL_HIGHBIT
-            ; if wParam = 16
-            ;     msg = HSHELL_FLASH
-            ; if wParam = 17
-            ;     msg = HSHELL_RUDEAPPACTIVATED
-    }
-}
-
-
-DrawActive() {
+;     switch wParam {
+;         ;
+;         case 32772:
+;             ; wm.update()
+;             ; SetTimer(DrawActive, -1) ; run once
+;             ; HSHELL_WINDOWCREATED
+;         case 1:
+;             ; refresh
+;             ; PlaceNewWindow(lParam)
+;             ; HSHELL_APPCOMMAND 12
+;             ; HSHELL_REDRAW 6
+;             ; if wParam = 1
+;             ;     msg = HSHELL_WINDOWCREATED
+;             ; if wParam = 2q
+;             ;     msg = HSHELL_WINDOWDESTROYED
+;             ; if wParam = 3
+;             ;     msg = HSHELL_ACTIVATESHELLWINDOW
+;             ; if wParam = 4
+;             ;     msg = HSHELL_WINDOWACTIVATED
+;             ; if wParam = 5
+;             ;     msg = HSHELL_GETMINRECT
+;             ; if wParam = 6
+;             ;     msg = HSHELL_REDRAW
+;             ; if wParam = 7
+;             ;     msg = HSHELL_TASKMAN
+;             ; if wParam = 8
+;             ;     msg = HSHELL_LANGUAGE
+;             ; if wParam = 9
+;             ;     msg = HSHELL_SYSMENU
+;             ; if wParam = 10
+;             ;     msg = HSHELL_ENDTASK
+;             ; if wParam = 11
+;             ;     msg = HSHELL_ACCESSIBILITYSTATE
+;             ; if wParam = 12
+;             ;     msg = HSHELL_APPCOMMAND
+;             ; if wParam = 13
+;             ;     msg = HSHELL_WINDOWREPLACED
+;             ; if wParam = 14
+;             ;     msg = HSHELL_WINDOWREPLACING
+;             ; if wParam = 15
+;             ;     msg = HSHELL_HIGHBIT
+;             ; if wParam = 16
+;             ;     msg = HSHELL_FLASH
+;             ; if wParam = 17
+;             ;     msg = HSHELL_RUDEAPPACTIVATED
+;     }
+; }
 
 
-    ; border_color := "0x6238FF"
-    border_color := "0x7ce38b"
-
-    ; Start by removing the borders from all windows, since we do not know which window was previously active
-    windowHandles := WinGetList(, , ,)
-    For handle in windowHandles
-    {
-        DrawBorder(handle, , 0)
-    }
-
-    ; Draw the border around the active window
-    window := WinExist("A")
-
-    if hasWindowsOnSamePosition(window) {
-        border_color := "0xf9cbe5"
-    } else {
-        border_color := "0x7ce38b"
-    }
-    ;  border_color := "0xf9cbe5" ; pink
-    ;  border_color := "0x79e1df" ; aqua
+; DrawActive() {
 
 
-    DrawBorder(window, border_color, 1)
-}
+;     ; border_color := "0x6238FF"
+;     border_color := "0x7ce38b"
+
+;     ; Start by removing the borders from all windows, since we do not know which window was previously active
+;     windowHandles := WinGetList(, , ,)
+;     For handle in windowHandles
+;     {
+;         DrawBorder(handle, , 0)
+;     }
+
+;     ; Draw the border around the active window
+;     window := WinExist("A")
+
+;     if hasWindowsOnSamePosition(window) {
+;         border_color := "0xf9cbe5"
+;     } else {
+;         border_color := "0x7ce38b"
+;     }
+;     ;  border_color := "0xf9cbe5" ; pink
+;     ;  border_color := "0x79e1df" ; aqua
+
+
+;     DrawBorder(window, border_color, 1)
+; }
 
 ; refresh()
 
@@ -363,8 +363,8 @@ PlaceNewWindow(handle) {
 }
 
 
-F3:: PlaceNewWindow(WinGetId("A"))
-F2:: refresh()
+; F3:: PlaceNewWindow(WinGetId("A"))
+; F2:: refresh()
 ; F6:: test()
 
 ; test() {
@@ -758,8 +758,7 @@ global lastEventHandle := -1
 
 onEvent(eventId, eventHandle, msg, ignore) {
 
-    print "Event " eventId "  p " eventHandle ; " " msg " " handle
-
+    ; print "Event " eventId "  p " eventHandle ; " " msg " " handle
 
     global lastEventId
     global lastEventHandle
@@ -789,21 +788,26 @@ onEvent(eventId, eventHandle, msg, ignore) {
         case HSHELL_HIGHBIT:
         case HSHELL_FLASH: ; 16
         case HSHELL_WINDOWCREATED: ; 1
+            print "Updating WIN CREATED " eventHandle 
             wm.update
         case HSHELL_WINDOWDESTROYED: ; 2
+        print "Updating WIN DESTROYED " eventHandle 
             wm.update
         case HSHELL_WINDOWACTIVATED: ; 4
+        print "Updating WIN ACTIVATED: " eventHandle 
             wm.update
         case HSHELL_RUDEAPPACTIVATED,
             HSHELL_RUDEAPPACTIVATED_BIS: ; 32772
+            print "Updating WIN RUDEAPPACTIVATED, " eventHandle 
             wm.update
+            print "updateActiveWindow WIN RUDEAPPACTIVATED"
             wm.updateActiveWindow()
     }
 }
 
 ExcludeScriptMessages := "1"	; 0 to include
 
-; HookWinEvent()
+HookWinEvent()
 
 HookWinEvent() {
     global
@@ -824,84 +828,73 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
     if (hWnd == 0)
         return
 
-
     if (Event != 32779)
         return
 
     If WinExist("ahk_id " hWnd) {
-     
-        try {
-            process := WinGetProcessName(hWnd)
-            print "WinMove : " process " " WinGetTitle("ahk_id " hWnd)
-        } catch as e {
-
-        }
+        wm.winMoved(hWnd)
+        
     } else {
         return
     }
 
-    ; If WinExist( hWnd) {
-    ;     print hWnd "Exists !"
-    ;     print WinGetTitle(hWnd)
-    ; }
-
-    Event += 0
-    message := ""
+    ; Event += 0
+    ; message := ""
 
 
-    if (Event = 1)
-        Message := "EVENT_SYSTEM_SOUND"
-    else if (Event = 2)
-        Message := "EVENT_SYSTEM_ALERT"
-    else if (Event = 3)
-        Message := "EVENT_SYSTEM_FOREGROUND"
-    else if (Event = 4)
-        Message := "EVENT_SYSTEM_MENUSTART"
-    else if (Event = 5)
-        Message := "EVENT_SYSTEM_MENUEND"
-    else if (Event = 6)
-        Message := "EVENT_SYSTEM_MENUPOPUPSTART"
-    else if (Event = 7)
-        Message := "EVENT_SYSTEM_MENUPOPUPEND"
-    else if (Event = 8)
-        Message := "EVENT_SYSTEM_CAPTURESTART"
-    else if (Event = 9)
-        Message := "EVENT_SYSTEM_CAPTUREEND"
-    else if (Event = 10)
-        Message := "EVENT_SYSTEM_MOVESIZESTART"
-    else if (Event = 11)
-        Message := "EVENT_SYSTEM_MOVESIZEEND"
-    else if (Event = 12)
-        Message := "EVENT_SYSTEM_CONTEXTHELPSTART"
-    else if (Event = 13)
-        Message := "EVENT_SYSTEM_CONTEXTHELPEND"
-    else if (Event = 14)
-        Message := "EVENT_SYSTEM_DRAGDROPSTART"
-    else if (Event = 15)
-        Message := "EVENT_SYSTEM_DRAGDROPEND"
-    else if (Event = 16)
-        Message := "EVENT_SYSTEM_DIALOGSTART"
-    else if (Event = 17)
-        Message := "EVENT_SYSTEM_DIALOGEND"
-    else if (Event = 18)
-        Message := "EVENT_SYSTEM_SCROLLINGSTART"
-    else if (Event = 19)
-        Message := "EVENT_SYSTEM_SCROLLINGEND"
-    else if (Event = 20)
-        Message := "EVENT_SYSTEM_SWITCHSTART"
-    else if (Event = 21)
-        Message := "EVENT_SYSTEM_SWITCHEND"
-    else if (Event = 22)
-        Message := "EVENT_SYSTEM_MINIMIZESTART"
-    else if (Event = 23)
-        Message := "EVENT_SYSTEM_MINIMIZEEND"
-    else if (Event = 32779)
-        Message := "EVENT_OBJECT_LOCATIONCHANGE"
+    ; if (Event = 1)
+    ;     Message := "EVENT_SYSTEM_SOUND"
+    ; else if (Event = 2)
+    ;     Message := "EVENT_SYSTEM_ALERT"
+    ; else if (Event = 3)
+    ;     Message := "EVENT_SYSTEM_FOREGROUND"
+    ; else if (Event = 4)
+    ;     Message := "EVENT_SYSTEM_MENUSTART"
+    ; else if (Event = 5)
+    ;     Message := "EVENT_SYSTEM_MENUEND"
+    ; else if (Event = 6)
+    ;     Message := "EVENT_SYSTEM_MENUPOPUPSTART"
+    ; else if (Event = 7)
+    ;     Message := "EVENT_SYSTEM_MENUPOPUPEND"
+    ; else if (Event = 8)
+    ;     Message := "EVENT_SYSTEM_CAPTURESTART"
+    ; else if (Event = 9)
+    ;     Message := "EVENT_SYSTEM_CAPTUREEND"
+    ; else if (Event = 10)
+    ;     Message := "EVENT_SYSTEM_MOVESIZESTART"
+    ; else if (Event = 11)
+    ;     Message := "EVENT_SYSTEM_MOVESIZEEND"
+    ; else if (Event = 12)
+    ;     Message := "EVENT_SYSTEM_CONTEXTHELPSTART"
+    ; else if (Event = 13)
+    ;     Message := "EVENT_SYSTEM_CONTEXTHELPEND"
+    ; else if (Event = 14)
+    ;     Message := "EVENT_SYSTEM_DRAGDROPSTART"
+    ; else if (Event = 15)
+    ;     Message := "EVENT_SYSTEM_DRAGDROPEND"
+    ; else if (Event = 16)
+    ;     Message := "EVENT_SYSTEM_DIALOGSTART"
+    ; else if (Event = 17)
+    ;     Message := "EVENT_SYSTEM_DIALOGEND"
+    ; else if (Event = 18)
+    ;     Message := "EVENT_SYSTEM_SCROLLINGSTART"
+    ; else if (Event = 19)
+    ;     Message := "EVENT_SYSTEM_SCROLLINGEND"
+    ; else if (Event = 20)
+    ;     Message := "EVENT_SYSTEM_SWITCHSTART"
+    ; else if (Event = 21)
+    ;     Message := "EVENT_SYSTEM_SWITCHEND"
+    ; else if (Event = 22)
+    ;     Message := "EVENT_SYSTEM_MINIMIZESTART"
+    ; else if (Event = 23)
+    ;     Message := "EVENT_SYSTEM_MINIMIZEEND"
+    ; else if (Event = 32779)
+    ;     Message := "EVENT_OBJECT_LOCATIONCHANGE"
 
-    ; print "Event " Event " Message " Message " hWnd " hWnd " idObject " idObject " idChild " idChild " dwEventThread " dwEventThread " dwmsEventTime " dwmsEventTime
+    ; ; print "Event " Event " Message " Message " hWnd " hWnd " idObject " idObject " idChild " idChild " dwEventThread " dwEventThread " dwmsEventTime " dwmsEventTime
 
-    Sleep(150)
-    EventHex := Event
+    ; Sleep(0)
+    ; EventHex := Event
 
     ; if(message!=""){
     ;     try{
@@ -925,12 +918,14 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
 }
 
 
-onTest(eventId, eventHandle, msg, ignore) {
-    print "plop"
-}
 
 Persistent
 
+; RegWrite 0, "REG_DWORD", "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\System","DisableLockWorkstation" ; disable the Windows lock feature
+; DllCall("LockWorkStation")
+ 
+; Sleep(1000)
+; RegWrite 1, "REG_DWORD", "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\System","DisableLockWorkstation" ; reenable the Windows lock feature
 
 #numpad1:: wm.snapTo(BLC)
 #numpad2:: wm.snapTo(CB)
@@ -942,11 +937,95 @@ Persistent
 #numpad8:: wm.snapTo(CT)
 #numpad9:: wm.snapTo(TRC)
 
-#Left:: left()
-#Right:: right()
-#Up:: up()
-#Down:: down()
+#Left:: wm.modLeft()
+#Right:: wm.modRight()
 
+
+; #Up:: up()
+; #Down:: down()
+
+#Enter::Run("wt.exe")
+#d::Send("^{Space}")
+#w::Send("!{F4}")
+
+; #Down::{
+;     print "#down"
+;     ; print A_PriorHotkey
+;     ; print A_TimeSincePriorHotkey
+; }
+
+; #Up::  {
+;     ; print A_PriorHotkey " " A_TimeSincePriorHotkey
+;     if ( A_TimeSincePriorHotkey == "" ) {
+;         combo := "#Up"
+;         print combo " single"
+;     } else if (A_TimeSincePriorHotkey < 200) {
+        
+;         switch A_PriorHotkey {
+;             case "#Down":   combo := "invalid"
+;             case "#Left":   combo := "Up Left"
+;             case "#Right":  combo := "Up Right"
+;             case "#Up":     combo := "Up x2"
+;             default:  combo := "not found"  
+;         }
+;         print combo " combo"
+;     } else {
+;         print combo " single"
+;     }
+
+
+
+;     ; print A_PriorHotkey
+;     ; print A_TimeSincePriorHotkey
+; }
+; #Down:: ;
+; #Right:: ;
+; #Left:: {
+;     ; print A_PriorHotkey " " A_TimeSincePriorHotkey
+;     if ( A_TimeSincePriorHotkey == "" ) {
+;         combo := "#Left"
+;         print combo " single"
+;     } else if (A_TimeSincePriorHotkey <  200) {
+;         switch A_PriorHotkey {
+;             case "#Down":   combo := "Down Left"
+;             case "#Left":   combo := "Left x2"
+;             case "#Right":  combo := "invalid"
+;             case "#Up":     combo := "Up Left"
+;             default:  combo := "not found"  
+;         }
+;         print combo " combo"
+;     } else {
+;         combo := "#Left"
+;         print combo " single"
+;     }
+
+;     ; print combo "  " A_TimeSincePriorHotkey
+
+;     ; print A_PriorHotkey
+;     ; print A_TimeSincePriorHotkey
+; }
+#y:: wm.snapTo(TLC) ;
+#u:: wm.snapTo(TL) ;
+#i:: wm.snapTo(TR) ;
+#o:: wm.snapTo(TRC) 
+
+#h:: wm.snapTo(LS) ;
+#j:: wm.snapTo(l3) 
+#k:: wm.snapTo(R3) 
+#l:: wm.snapTo(RS) ;
+
+#n:: wm.snapTo(BLC) ;
+#m:: wm.snapTo(BL) ;
+#,:: wm.snapTo(BR) ; 
+#.:: wm.snapTo(BRC) ;
+
+; #T:: wm.snapTo(R3)
+; #numpad4:: wm.snapTo(L)
+; #numpad5:: wm.snapTo(C)
+; #numpad6:: wm.snapTo(R)
+; #numpad7:: wm.snapTo(TLC)
+; #numpad8:: wm.snapTo(CT)
+; #numpad9:: wm.snapTo(TRC)
 
 ; Left:: if (GetKeyState("LWin") and GetKeyState("Left") and GetKeyState("Up")){
 ;     MsgBox "Left."
