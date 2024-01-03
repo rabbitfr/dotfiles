@@ -95,6 +95,9 @@ global CBLC := 66
 global CBRC := 77
 ; ....
 ; ...8
+; global FLOATING := -1
+; ....
+; ...8
 
 global namedAreas := Map()
 namedAreas["L"] := L
@@ -121,6 +124,7 @@ namedAreas["CTLC"] := CTLC
 namedAreas["CTRC"] := CTRC
 namedAreas["CBLC"] := CBLC
 namedAreas["CBRC"] := CBRC
+; namedAreas["Floating"] := FLOATING
 
 global areasToName := Map()
 for key, value in namedAreas {

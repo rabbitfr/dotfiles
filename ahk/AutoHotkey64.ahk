@@ -940,6 +940,11 @@ Persistent
 #Left:: wm.modLeft()
 #Right:: wm.modRight()
 
+#F1:: wm.listStacked()
+; #Tab:: wm.altTab()
+
+#PgUp::  wm.previousInStack()
+#PgDn::  wm.nextInStack()
 
 ; #Up:: up()
 ; #Down:: down()
@@ -969,7 +974,7 @@ Persistent
 ;             default:  combo := "not found"  
 ;         }
 ;         print combo " combo"
-;     } else {
+;     } else {♣
 ;         print combo " single"
 ;     }
 

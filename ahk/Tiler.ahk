@@ -19,8 +19,8 @@ class Tiler {
 
     winMoved(handle) {
         ; print "Updating on winMoved event for " handle " " WinGetClass(handle)
-       
-        
+
+
         try {
             process := WinGetProcessName(handle)
             ; print "`t WinMove : " process " " WinGetTitle("ahk_id " handle)
@@ -28,18 +28,18 @@ class Tiler {
             this.update()
             print "updateActiveWindow  WIN MOVE"
             this.updateActiveWindow()
-          
+
         } catch as e {
             print "Updating WIN MOVE : process not found "
-        }   
+        }
 
-       
+
         ; if (this.handles.Has(handle)) {
         ;     this.updateActiveWindow()
         ; }
     }
 
-    debugApps := true 
+    debugApps := true
 
     update() {
 
@@ -101,7 +101,7 @@ class Tiler {
         ; print this.areas.Count " areas found"
 
         if (this.debugApps)
-            print "--------- Searching for apps ---------
+            print "--------- Searching for apps ---------"
 
         winHandles := WinGetList(, ,)
 
@@ -116,7 +116,7 @@ class Tiler {
             ; ignore some system classes
             if (class ~= "Progman|WorkerW|Shell_TrayWnd|NarratorHelperWindow|Button|PseudoConsoleWindow") {
                 if (this.debugApps)
-                print handle " ignored (System)"
+                    print handle " ignored (System)"
                 continue
             }
 
@@ -124,7 +124,7 @@ class Tiler {
                 process := WinGetProcessName(handle)
             catch as e {
                 if (this.debugApps)
-                print handle " ignored (No Process)"
+                    print handle " ignored (No Process)"
                 continue
             }
 
@@ -140,7 +140,7 @@ class Tiler {
 
                 if (w == 0 and h == 0) {
                     if (this.debugApps)
-                    print handle " ignored (size 0)"
+                        print handle " ignored (size 0)"
                     continue
                 }
 
@@ -156,7 +156,7 @@ class Tiler {
 
                 if (startZone < 1 or startZone > this.columns * this.rows or stopZone < 1 or stopZone > this.columns * this.rows) {
                     if (this.debugApps)
-                    print "[" handle "] ignored (bad zones) " startZone " " stopZone
+                        print "[" handle "] ignored (bad zones) " startZone " " stopZone
                     continue
                 }
 
@@ -170,7 +170,7 @@ class Tiler {
                     this.handles[handle] := tile
                 } else {
                     if (this.debugApps)
-                    print "[" handle "] ignored (unknown or not registered area)"
+                        print "[" handle "] ignored (unknown or not registered area " areaId " )"
                 }
 
             } if (state == 1) {
@@ -184,13 +184,27 @@ class Tiler {
 
             }
 
-            
+
         }
 
         ; print this.handles.Count " apps found"
 
         ; for id, handle in this.handles
         ;     print handle.toString()
+    }
+
+    handleInfo(handle) {
+        class := WinGetClass(handle)
+        try
+            process := WinGetProcessName(handle)
+        catch as e {
+            process := "not found"
+        }
+        state := WinGetMinMax(handle)
+
+        title := WinGetTitle(handle)
+
+        print "[" handle "] [" state "] " process " : " title
     }
 
     snapTo(areaId, handle := WinGetId("A")) {
@@ -213,7 +227,7 @@ class Tiler {
                 ; print "------------- GLUE EXPAND ------------------"
                 ; this.updatingDisabled := true
                 ; tilesToExpand := this.tilesRightOf(tile)
-        
+
 
                 ; WinSetTransparent 0, tile.handle
                 ; for h, tileOnRight in tilesToExpand  {
@@ -225,12 +239,11 @@ class Tiler {
                 ;     this.snapTo(expandedArea.area, h)
                 ;     WinMoveTop(h)
                 ; }
-
                 this.snapTo(LS, handle)
 
                 ; WinSetTransparent 255,tile.handle
-                ; for h, tileOnRight in tilesToExpand 
-                ;     WinSetTransparent 255,h 
+                ; for h, tileOnRight in tilesToExpand
+                ;     WinSetTransparent 255,h
 
                 ; this.updatingDisabled := false
                 ; print "------------- GLUE EXPAND ------------------"
@@ -346,6 +359,146 @@ class Tiler {
 
     }
 
+    previousHighlight := -1
+
+    altTab() {
+        try {
+            altTabs := this.AltTabWindows()
+
+            if (this.previousHighlight != -1) {
+                currentId := this.indexOf(altTabs, this.previousHighlight)
+                previous := this.handles[this.previousHighligh]
+                previous.clearBorder()
+            } else {
+                currentId := 1
+            }
+
+            if (altTabs.Length > 1) {
+                nextId := currentId + 1
+                nextHandle := altTabs[nextId]
+                next := this.handles[nextHandle]
+                next.highlight()
+                this.previousHighlight := next.handle
+            }
+        } catch as e {
+            
+            this.previousHighligh := -1
+        }
+
+    }
+
+
+    AltTabWindows() { ; modernized, original by ophthalmos https://www.autohotkey.com/boards/viewtopic.php?t=13288
+        static WS_EX_APPWINDOW := 0x40000 ; has a taskbar button
+        static WS_EX_TOOLWINDOW := 0x80 ; does not appear on the Alt-Tab list
+        static GW_OWNER := 4 ; identifies as the owner window
+
+        ; Get the current monitor the mouse cusor is in.
+        DllCall("GetCursorPos", "uint64*", &point := 0)
+        hMonitor := DllCall("MonitorFromPoint", "uint64", point, "uint", 0x2, "ptr")
+
+        AltTabList := []
+
+        DetectHiddenWindows False     ; makes IsWindowVisible and DWMWA_CLOAKED unnecessary in subsequent call to WinGetList()
+
+        for hwnd in WinGetList() {    ; gather a list of running programs
+
+            ; Check if the window is on the same monitor.
+            if hMonitor == DllCall("MonitorFromWindow", "ptr", hwnd, "uint", 0x2, "ptr") {
+
+                ; Find the top-most owner of the child window.
+                owner := DllCall("GetAncestor", "ptr", hwnd, "uint", GA_ROOTOWNER := 3, "ptr")
+                owner := owner || hwnd ; Above call could be zero.
+
+                ; Check to make sure that the active window is also the owner window.
+                if (DllCall("GetLastActivePopup", "ptr", owner) = hwnd) {
+
+                    ; Get window extended style.
+                    es := WinGetExStyle(hwnd)
+
+                    ; Must appear on the Alt+Tab list, have a taskbar button, and not be a Windows 10 background app.
+                    if (!(es & WS_EX_TOOLWINDOW) || (es & WS_EX_APPWINDOW))
+                        AltTabList.push(hwnd)
+                }
+            }
+        }
+
+        return AltTabList
+    }
+
+    nextInStack(handle := WinGetId("A")) {
+
+        current := this.handles[handle].handle
+
+        siblings := this.getSiblingsInArea(current)
+        currentIndex := this.indexOf(siblings, current)
+        next := currentIndex + 1
+
+        if (next > siblings.Length) {
+            next := 1
+        }
+
+        WinActivate(siblings[next])
+    }
+
+    previousInStack(handle := WinGetId("A")) {
+
+        current := this.handles[handle].handle
+        siblings := this.getSiblingsInArea(current)
+        currentIndex := this.indexOf(siblings, current)
+        previous := currentIndex - 1
+
+        if (previous < 1) {
+            previous := siblings.Length
+        }
+
+        WinActivate(siblings[previous])
+
+    }
+
+    getSiblingsInArea(handle := WinGetId("A")) {
+        current := this.handles[handle]
+
+        siblings := []
+
+        for handle, tile in this.handles {
+            if (tile.area.area == current.area.area)
+                siblings.Push(handle)
+        }
+        return siblings
+    }
+
+    indexOf(array, value) {
+
+        for candidate in array {
+
+            if (candidate == value)
+                return A_Index
+
+        }
+        return -1
+    }
+
+
+    listStacked(handle := WinGetId("A")) {
+
+        ; print "-- Stacked --"
+
+        currentTile := this.handles[handle]
+
+        return currentTile.getSiblingsOnArea()
+
+        ; for handleCandidate, tileCandidate in this.handles {
+
+        ;     if (handleCandidate != currentTile.handle and tileCandidate.area.area == currentTile.area.area) {
+        ;         ; siblings[handle] := tile
+        ;         print handleCandidate.toString()
+        ;     }
+        ; }
+
+        ; print "-- Stacked --"
+    }
+
 
     ; get window position without the invisible border
     WinGetPosEx(&x?, &y?, &w?, &h?, hwnd?) {
@@ -415,12 +568,13 @@ class Tiler {
         }
 
         getSiblingsOnArea() {
-            siblings := Map()
+            siblings := []
 
             for handle, tile in this.tiler.handles {
                 if (handle != this.handle and tile.area == this.area) {
-                    siblings[handle] := tile
-                    ; print "On same area " tile.toString()
+                    ; siblings[handle] := tile
+                    siblings.Push(tile)
+                    ; print "Sibling " tile.toString()
                 }
             }
 
@@ -428,7 +582,11 @@ class Tiler {
         }
 
         hasSiblingsOnArea() {
-            return this.getSiblingsOnArea().Count > 0
+            return this.getSiblingsOnArea().Length > 0
+        }
+
+        highlight() {
+            DrawBorder(this.handle, "0xFFE62D", 1)
         }
 
         drawBorder() {
