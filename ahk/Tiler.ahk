@@ -7,12 +7,14 @@
 class Tiler {
 
     updatingDisabled := false
+    drawActiveDisabled := false
 
     __New(columns := 4, rows := 2, spacing := 4) {
         this.spacing := spacing
         this.columns := columns
         this.rows := rows
 
+        this.update()
         ; eventListener := Tiler.WindowsUpdater()
     }
 
@@ -39,7 +41,7 @@ class Tiler {
         ; }
     }
 
-    debugApps := true
+    debugApps := false
 
     update() {
 
@@ -343,47 +345,129 @@ class Tiler {
 
     updateActiveWindow() {
 
-        ; get the active window
-        active := WinExist("A")
+        if (!this.drawActiveDisabled) {
+            ; get the active window
+            active := WinExist("A")
 
-        ; Start by removing the borders from all windows, since we do not know which window was previously active
-        for id, tile in this.handles {
-            tile.clearBorder()
-        }
+            ; Start by removing the borders from all windows, since we do not know which window was previously active
+            for id, tile in this.handles {
+                tile.clearBorder()
+            }
 
-        if (this.handles.Has(active)) {
-            this.handles[active].drawBorder()
-        } else {
-            print "Cannot find handle " active " in current list ??"
+            if (this.handles.Has(active)) {
+                this.handles[active].drawBorder()
+            } else {
+                print "Cannot find handle " active " in current list ??"
+            }
         }
 
     }
 
+
+    ;  1 2 3 4 5..
+    ; first alt tab ->  2 1 3 4 5
+    ; second -> 1 2 3 4 5
+    ;
+    ;
+    ; altTab() {
+    ;     try {
+    ;         altTabs := this.AltTabWindows()
+
+    ;         if (this.previousHighlight != -1) {
+    ;             currentId := this.indexOf(altTabs, this.previousHighlight)
+    ;             previous := this.handles[this.previousHighligh]
+    ;             previous.clearBorder()
+    ;         } else {
+    ;             currentId := 1
+    ;         }
+
+    ;         if (altTabs.Length > 1) {
+    ;             nextId := currentId + 1
+    ;             nextHandle := altTabs[nextId]
+    ;             next := this.handles[nextHandle]
+    ;             next.highlight()
+    ;             this.previousHighlight := next.handle
+    ;         }
+    ;     } catch as e {
+
+    ;         this.previousHighligh := -1
+    ;     }
+
+    tabsSnapshots := []
     previousHighlight := -1
 
     altTab() {
+        print "-- highlight next window in history list  ---`n"
+        ; this.drawActiveDisabled := true
+
+
         try {
-            altTabs := this.AltTabWindows()
 
-            if (this.previousHighlight != -1) {
-                currentId := this.indexOf(altTabs, this.previousHighlight)
-                previous := this.handles[this.previousHighligh]
-                previous.clearBorder()
-            } else {
-                currentId := 1
+            if (this.tabsSnapshots.Length == 0) {
+                this.tabsSnapshots := this.AltTabWindows()
+                this.previousHighligh := -1
             }
 
-            if (altTabs.Length > 1) {
-                nextId := currentId + 1
-                nextHandle := altTabs[nextId]
-                next := this.handles[nextHandle]
-                next.highlight()
-                this.previousHighlight := next.handle
-            }
+            ; show active win
+            activeHandle := WinGetId("A")
+            active := this.handles[activeHandle]
+            active.active()
+
+            ; for h in this.tabsSnapshots
+            ;     print "tabs : " h "`n"
+
+
+            ; for h in this.handles
+            ;     print "handles : " h "`n"
+
+
+            if (this.previousHighlight == -1)
+                currentHandle := WinGetId("A")
+            else
+                currentHandle := this.previousHighlight
+
+            currentIndex := this.indexOf(this.tabsSnapshots, currentHandle)
+            current := this.handles[currentHandle]
+            print "current " currentIndex " " currentHandle " : clearing border "
+
+            current.clearBorder()
+
+            nextIndex := currentIndex + 1
+
+            if (nextIndex > this.tabsSnapshots.Length)
+                nextIndex := 1
+
+
+            nextHandle := this.tabsSnapshots[nextIndex]
+            next := this.handles[nextHandle]
+            print "next " nextIndex " " nextHandle " : highlight border "
+            next.activate()
+            ; next.bringToFront()
+
+            this.previousHighlight := nextHandle
+
+
         } catch as e {
-            
-            this.previousHighligh := -1
+            print "ERRR " e
+            ; this.drawActiveDisabled := false
+            ; this.previousHighligh := -1
         }
+
+    }
+
+    altTabStop() {
+
+        print "-- alt tab stop ---"
+        this.drawActiveDisabled := false
+
+        if (this.previousHighlight != -1) {
+            ; show active win
+            activeHandle := this.previousHighlight
+            WinActivate(activeHandle)
+        }
+
+        this.tabsSnapshots := []
+        this.previousHighligh := -1
 
     }
 
@@ -472,8 +556,13 @@ class Tiler {
 
         for candidate in array {
 
-            if (candidate == value)
+            ; print A_Index
+
+            if (candidate == value) {
+
+                ; print "index is : " A_Index "`n"
                 return A_Index
+            }
 
         }
         return -1
@@ -589,6 +678,10 @@ class Tiler {
             DrawBorder(this.handle, "0xFFE62D", 1)
         }
 
+        active() {
+            DrawBorder(this.handle, "0x7ce38b", 1)
+        }
+
         drawBorder() {
 
             if (this.hasSiblingsOnArea()) {
@@ -637,6 +730,19 @@ class Tiler {
             nextArea := this.tiler.areas[next]
             return nextArea
         }
+
+        activate() {
+            WinActivate(this.handle)
+        }
+
+        sendToBack() {
+            WinMoveBottom(this.handle)
+        }
+
+        bringToFront() {
+            WinMoveTop(this.handle)
+        }
+
 
         toString() {
             return this.area.name "`t" this.area.area " `t" this.process " [" this.handle "]"

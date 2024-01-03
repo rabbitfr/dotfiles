@@ -762,7 +762,7 @@ onEvent(eventId, eventHandle, msg, ignore) {
 
     global lastEventId
     global lastEventHandle
-
+    
     if (eventId != lastEventId or eventHandle != lastEventHandle) {
         ; do nothing
         lastEventId := eventId
@@ -940,8 +940,37 @@ Persistent
 #Left:: wm.modLeft()
 #Right:: wm.modRight()
 
-#F1:: wm.listStacked()
-; #Tab:: wm.altTab()
+#F1:: wm.listStacked()  
+
+LWin & Tab:: {
+    wm.altTab()
+    return
+} 
+
+~LWin:: {
+    KeyWait "Lwin"
+    wm.altTabStop()
+    return
+} 
+
+; Tab:: {
+;     wm.altTab5()
+;     ; KeyWait "Lwin T3" 
+;     ; wm.altTab5()
+;     ; return
+; } 
+
+; #:: {
+;     KeyWait "Lwin"
+;     wm.altTab5()
+;     ; return
+; } 
+
+; Tab:: {
+;     print "Tab"
+; }
+; Tab:: wm.altTab5()
+; LWin Up:: wm.altTab4()
 
 #PgUp::  wm.previousInStack()
 #PgDn::  wm.nextInStack()
