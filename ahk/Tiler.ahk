@@ -100,27 +100,32 @@ class Tiler {
             ; print "pouet " this.areas[area].name
         }
 
+
         ; print this.areas.Count " areas found"
 
         if (this.debugApps)
             print "--------- Searching for apps ---------"
 
-        winHandles := WinGetList(, ,)
+        ; winHandles := WinGetList(, ,)
+
+        winHandles := this.AltTabWindows()
 
         ; Build current windows map for current screen
         this.handles := Map()
 
         for handle in winHandles
         {
+            if (this.debugApps)
+                print "[" handle "] checking ..."
 
-            class := WinGetClass(handle)
+            ; class := WinGetClass(handle)
 
-            ; ignore some system classes
-            if (class ~= "Progman|WorkerW|Shell_TrayWnd|NarratorHelperWindow|Button|PseudoConsoleWindow") {
-                if (this.debugApps)
-                    print handle " ignored (System)"
-                continue
-            }
+            ; ; ignore some system classes
+            ; if (class ~= "Progman|WorkerW|Shell_TrayWnd|NarratorHelperWindow|Button|PseudoConsoleWindow") {
+            ;     if (this.debugApps)
+            ;         print handle " ignored (System)"
+            ;     continue
+            ; }
 
             try
                 process := WinGetProcessName(handle)
@@ -168,20 +173,46 @@ class Tiler {
                     area := this.areas[areaId]
                     ; desc := "[" handle "] '" class " " area.name " " area.area " " startCol "," startRow " " stopCol "," stopRow " " startZone " " stopZone " " areaId "' `t" process " " title
                     ; print desc
+
+
+                    centerX := x + (width // 2)
+                    centerY := y + (height // 2)
+                    guessedCenterX := area.x + (area.w // 2)
+                    guessedCenterY := area.y + (area.h // 2)
+
+                    distanceX := Abs(guessedCenterX - centerX)
+                    distanceY := Abs(guessedCenterY - centerY)
+
+
+                    if (distancex >= 40 and distanceY >= 40) {
+                        ; this window is floating and not snapped.
+                        customArea := Tiler.Area("Floating", F, 0, 0, 0, 0, 0, 0, x, y, w, h)
+                        area := customArea
+                    } 
+
                     tile := Tiler.Tile(handle, process, area, class, state, this)
                     this.handles[handle] := tile
+
+                    if (distancex != 0 and distanceX <= 40 and distanceY != 0 and distanceY <= 40) {
+                        ; slight difference between current position and area, auto snap
+                        tile.resetPositionToArea()
+                    } 
+                    ; print handle " x " x " " area.x " y " y " " area.y   " w " w " " area.w " h " h " " area.h "`n"
+
                 } else {
                     if (this.debugApps)
                         print "[" handle "] ignored (unknown or not registered area " areaId " )"
                 }
 
             } if (state == 1) {
-                ; print "[" handle "] Maximized"
+                if (this.debugApps)
+                    print "[" handle "] Maximized"
                 area := this.areas[F]
                 tile := Tiler.Tile(handle, process, area, class, state, this)
                 this.handles[handle] := tile
             } else if (state == -1) {
-                ; print "[" handle "] Minimized"
+                if (this.debugApps)
+                    print "[" handle "] Minimized"
                 continue
 
             }
@@ -189,10 +220,10 @@ class Tiler {
 
         }
 
-        ; print this.handles.Count " apps found"
+        print this.handles.Count " apps found " "`n"
 
-        ; for id, handle in this.handles
-        ;     print handle.toString()
+        for id, handle in this.handles
+            print handle.toString() "`n"
     }
 
     handleInfo(handle) {
@@ -360,6 +391,18 @@ class Tiler {
                 print "Cannot find handle " active " in current list ??"
             }
         }
+
+    }
+
+    onlyCenterAreaSnapped() {
+        onlyCenterAreaSnapped := false
+
+        ; for handle,tile in this.handles {
+
+        ;     if ( tile.area)
+
+        ; }
+
 
     }
 
@@ -695,6 +738,10 @@ class Tiler {
 
         }
 
+        resetPositionToArea() {
+            WinMoveEx this.area.x, this.area.y, this.area.w, this.area.h, this.handle
+        }
+
         snapTo(area) {
 
             ; switch to next mod if available : same shortcut with another mod key on double press
@@ -704,6 +751,8 @@ class Tiler {
                 ; do nothing
             }
 
+
+            ; Special area : Center Extended
 
             WinMoveEx area.x, area.y, area.w, area.h, this.handle
 

@@ -95,7 +95,7 @@ global CBLC := 66
 global CBRC := 77
 ; ....
 ; ...8
-; global FLOATING := -1
+global FLOATING := 00
 ; ....
 ; ...8
 

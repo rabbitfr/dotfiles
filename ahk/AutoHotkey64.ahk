@@ -181,7 +181,7 @@ refresh(exclude := "") {
             put(handlesByPos, area, handle)
             ; area by handle
             posByHandle[handle] := area
-            ; handle short desc
+            ; handle short desc 
             handleDesc[handle] := "[" handleIndex "] '" area "' `t" process
 
             handleIndex := handleIndex + 1
@@ -1056,7 +1056,7 @@ LWin & Tab:: {
 ; #T:: wm.snapTo(R3)
 ; #numpad4:: wm.snapTo(L)
 ; #numpad5:: wm.snapTo(C)
-; #numpad6:: wm.snapTo(R)
+; #numpad6:: wm.snapTo(R)2
 ; #numpad7:: wm.snapTo(TLC)
 ; #numpad8:: wm.snapTo(CT)
 ; #numpad9:: wm.snapTo(TRC)
