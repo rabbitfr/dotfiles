@@ -30,6 +30,7 @@ global R := 48
 ; .23.
 ; .67.
 global C := 27
+; global CE := 270
 ; 1234
 ; 5678
 global F := 18
@@ -103,6 +104,7 @@ global namedAreas := Map()
 namedAreas["L"] := L
 namedAreas["R"] := R
 namedAreas["C"] := C
+; namedAreas["CE"] := CE
 namedAreas["F"] := F
 namedAreas["LS"] := LS
 namedAreas["RS"] := RS

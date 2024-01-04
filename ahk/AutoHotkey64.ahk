@@ -485,6 +485,7 @@ nextModZone(&zoneStart, &zoneStop) {
 }
 
 
+
 ;  1  2  3  4
 ;  5  6  7  8
 
@@ -694,6 +695,7 @@ WinMoveEx(x?, y?, w?, h?, hwnd?) {
     diffY := fY - wY
     diffW := fW - wW
     diffH := fH - wH
+    print "diffX " diffX  "diffY " diffY "diffW " diffW  "diffH " diffW  
     ; new x, y, w, h with offset corrected.
     IsSet(x) && nX := x - diffX
     IsSet(y) && nY := y - diffY
@@ -942,6 +944,7 @@ Persistent
 
 #F1:: wm.listStacked()  
 
+
 LWin & Tab:: {
     wm.altTab()
     return
@@ -1038,19 +1041,19 @@ LWin & Tab:: {
 ;     ; print A_PriorHotkey
 ;     ; print A_TimeSincePriorHotkey
 ; }
-#y:: wm.snapTo(TLC) ;
-#u:: wm.snapTo(TL) ;
-#i:: wm.snapTo(TR) ;
+; #y:: wm.snapTo(TLC) ;
+#u:: wm.snapTo(TLC) ;
+#i:: wm.snapTo(CT) ;
 #o:: wm.snapTo(TRC) 
 
-#h:: wm.snapTo(LS) ;
-#j:: wm.snapTo(l3) 
-#k:: wm.snapTo(R3) 
+; #h:: wm.snapTo(LS) ;
+#j:: wm.snapTo(LS) 
+#k:: wm.snapTo(C) 
 #l:: wm.snapTo(RS) ;
 
-#n:: wm.snapTo(BLC) ;
-#m:: wm.snapTo(BL) ;
-#,:: wm.snapTo(BR) ; 
+; #n:: wm.snapTo(BLC) ;
+#m:: wm.snapTo(BLC) ;
+#,:: wm.snapTo(CB) ; 
 #.:: wm.snapTo(BRC) ;
 
 ; #T:: wm.snapTo(R3)

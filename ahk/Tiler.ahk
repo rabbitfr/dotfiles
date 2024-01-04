@@ -4,6 +4,7 @@
 #ErrorStdOut
 #Include helpers.ahk
 
+
 class Tiler {
 
     updatingDisabled := false
@@ -18,6 +19,60 @@ class Tiler {
         ; eventListener := Tiler.WindowsUpdater()
     }
 
+    test() {
+
+        this.update()
+
+        windows := []
+        margin := 4
+        spacing := 6
+    
+        cols := 4
+        rows := 4
+
+        cellWidth := (2560 - (2 * margin) - ( (cols - 1) * spacing)) //cols
+        cellHeight := (1600 - 38 - (2 * margin) - ((rows - 1)  * spacing)) // rows
+
+        originX := margin 
+        originY := 38 + margin
+
+        for row in range(1, rows) {
+
+            for col in range(1, cols) {
+
+                newGui := Gui(, "test_" ((row-1)*cols)+col,)
+                
+                x := originX + ((col - 1) * cellWidth) +  ((col - 1) * spacing) 
+                y := originY + ((row - 1) * cellHeight)+  ((row - 1) * spacing) 
+                w := cellWidth
+                h := cellHeight
+
+                windows.Push(newGui)
+                handle := newGui.Hwnd
+                newGui.Show()
+
+                WinMoveEx x, y, w, h, handle
+            }
+        }
+
+        totalWidth := (2 * margin) + ( (cols -1 ) * spacing) + (cols * cellWidth)
+        totalHeight := (2 * margin) + ( (rows -1 ) * spacing) + (rows * cellHeight) + 38
+
+        print "totalWidth " totalWidth  "totalHeight " totalHeight
+        ; at least 2 col width
+        ; cannot 
+
+        winHandles := this.AltTabWindows()
+
+        ; Build current windows map for current screen
+        this.handles := Map()
+
+        for handle in winHandles
+        {
+
+        }
+
+    }
 
     winMoved(handle) {
         ; print "Updating on winMoved event for " handle " " WinGetClass(handle)
@@ -101,6 +156,11 @@ class Tiler {
         }
 
 
+        ; Custom areas
+        ; centerArea := this.areas[C]
+        ; this.centerExtended := Tiler.Area("CE", 270, centerArea.startCell, centerArea.stopCell, centerArea.startCol, centerArea.startRow, centerArea.stopCol, centerArea.stopRow, centerArea.x - (this.cellWidth // 3), centerArea.y, centerArea.w + (this.cellWidth * 2 // 3), centerArea.h)
+        ; ; ; this.areas[area] := this.centerExtended
+
         ; print this.areas.Count " areas found"
 
         if (this.debugApps)
@@ -115,8 +175,6 @@ class Tiler {
 
         for handle in winHandles
         {
-            if (this.debugApps)
-                print "[" handle "] checking ..."
 
             ; class := WinGetClass(handle)
 
@@ -169,11 +227,12 @@ class Tiler {
 
                 areaId := startZone * 10 + stopZone ; will fail ? if more than 10 columns
 
-                if (this.areas.Has(areaId)) {
+                print "Area ID " areaId
+
+                if (this.areas.Has(areaId) or areaId == 00) {
                     area := this.areas[areaId]
                     ; desc := "[" handle "] '" class " " area.name " " area.area " " startCol "," startRow " " stopCol "," stopRow " " startZone " " stopZone " " areaId "' `t" process " " title
                     ; print desc
-
 
                     centerX := x + (width // 2)
                     centerY := y + (height // 2)
@@ -183,20 +242,33 @@ class Tiler {
                     distanceX := Abs(guessedCenterX - centerX)
                     distanceY := Abs(guessedCenterY - centerY)
 
+                    ; if (x == this.centerExtended.x and y == this.centerExtended.y and
+                    ;     width == this.centerExtended.w and width == this.centerExtended.h) {
+                    ;         area := this.centerExtended
+                    ; }
+                    ; else
+                    if (distancex >= 40 or distanceY >= 40) {
+                        ; if (x == this.centerExtended.x
+                        ;     and y == this.centerExtended.y
+                        ;     and width == this.centerExtended.w
+                        ;     and height == this.centerExtended.h) {
+                        ;         area := this.centerExtended
+                        ; } else {
 
-                    if (distancex >= 40 and distanceY >= 40) {
                         ; this window is floating and not snapped.
+                        ; print "Float dist " distanceX " " distanceY
                         customArea := Tiler.Area("Floating", F, 0, 0, 0, 0, 0, 0, x, y, w, h)
                         area := customArea
-                    } 
+                        ; }
+                    }
 
                     tile := Tiler.Tile(handle, process, area, class, state, this)
                     this.handles[handle] := tile
 
                     if (distancex != 0 and distanceX <= 40 and distanceY != 0 and distanceY <= 40) {
                         ; slight difference between current position and area, auto snap
-                        tile.resetPositionToArea()
-                    } 
+                        ; tile.resetPositionToArea()
+                    }
                     ; print handle " x " x " " area.x " y " y " " area.y   " w " w " " area.w " h " h " " area.h "`n"
 
                 } else {
@@ -220,10 +292,25 @@ class Tiler {
 
         }
 
-        print this.handles.Count " apps found " "`n"
+        ; print this.handles.Count " apps found " "`n"
 
         for id, handle in this.handles
             print handle.toString() "`n"
+
+        ; if (this.onlyCenterAreaSnapped()) {
+        ;     centeredTiles := this.tilesByArea(C)
+        ;     for tile in centeredTiles {
+        ;         tile.area := this.centerExtended
+        ;         tile.resetPositionToArea()
+        ;     }
+        ; }
+        ; else {
+        ;     centerextended := this.tilesByAreaName("CE")
+        ;     for tile in centerExtended {
+        ;         tile.area := this.areas[C]
+        ;         tile.resetPositionToArea()
+        ;     }
+        ; }
     }
 
     handleInfo(handle) {
@@ -397,15 +484,41 @@ class Tiler {
     onlyCenterAreaSnapped() {
         onlyCenterAreaSnapped := false
 
-        ; for handle,tile in this.handles {
+        for handle, tile in this.handles {
 
-        ;     if ( tile.area)
+            switch tile.area.area {
+                case FLOATING:
+                    continue
+                case C:
+                    onlyCenterAreaSnapped := true
+                default:
+                    onlyCenterAreaSnapped := false
+                    break
+            }
+        }
 
-        ; }
-
-
+        return onlyCenterAreaSnapped
     }
 
+    tilesByArea(areaId) {
+        tilesByArea := []
+
+        for h, tile in this.handles
+            if (tile.area.area == areaId)
+                tilesByArea.Push(tile)
+
+        return tilesByArea
+    }
+
+    tilesByAreaName(name) {
+        tilesByArea := []
+
+        for h, tile in this.handles
+            if (tile.area.name == name)
+                tilesByArea.Push(tile)
+
+        return tilesByArea
+    }
 
     ;  1 2 3 4 5..
     ; first alt tab ->  2 1 3 4 5
@@ -769,13 +882,16 @@ class Tiler {
                 case CB: next := B
                 case BRC: next := BR
                 case L: next := LS
+                case LS: next := L3
                 case C: next := F
                 case R: next := RS
+                case RS: next := R3
                 case TLC: next := TL
                 case CT: next := T
                 case TRC: next := TR
                 case BLC: next := BL
             }
+            print "NExt " area.area "`n"
             nextArea := this.tiler.areas[next]
             return nextArea
         }
