@@ -5,6 +5,25 @@
 #w::Send("!{F4}")
 
 ;
+; Win alt tab override
+;
+
+LWin & Tab:: {
+    tiler.altTab()
+    return
+} 
+
+~LWin:: {
+    KeyWait "Lwin"
+    tiler.altTabStop()
+    return
+} 
+
+
+#PgUp::  tiler.previousInStack()
+#PgDn::  tiler.nextInStack()
+
+;
 ; Direct move & resize shortcuts
 ;
 
@@ -47,7 +66,8 @@
 
 #Left:: tiler.modLeft()
 #Right:: tiler.modRight()
-
+#Up:: tiler.modUp()
+#Down:: tiler.modDown()
 ;
 #z:: tiler.undo()
 #+z:: tiler.redo()
@@ -63,6 +83,91 @@
 ;         print "No match found"
 ;     }
 ; }
+
+#F3:: {
+    z := Zones()
+
+    print "------------------------------------------`n"
+   
+    test := z.findByCode(27)
+    ; print "From " test.toString() "`n"
+    ; skrink L
+    ; print "skrink L ?`n"
+    resized := z.resize(test,1,0,0,0)
+    ; print "`t" resized.toString() "`n"
+    ; skrink R
+    ; print "skrink R ?`n"
+    resized := z.resize(test,0,-1,0,0)
+    ; print  "`t" resized.toString() "`n"
+    ; grow L
+    ; print "grow L ?`n"
+    resized := z.resize(test,-1,0,0,0)
+    ; print  "`t" resized.toString() "`n"
+    ; grow R
+    ; print "grow R ?`n"
+    resized :=  z.resize(test,0,1,0,0)
+    ; print  "`t" resized.toString() "`n"
+
+    test := z.findByCode(611)
+    ; print "From " test.toString() "`n"
+    print "skrink U (10 11)`n"
+    ; print "skrink L ?`n"
+    resized := z.resize(test,0,0,1,0)
+    ; print "`t" resized.toString() "`n"
+    print "skrink D (6 7)`n"
+    ; print "skrink R ?`n"
+    resized := z.resize(test,0,0,0,-1)
+    ; print  "`t" resized.toString() "`n"
+    print "grow U (2 11)`n"
+    ; print "grow L ?`n"
+    resized := z.resize(test,0,0,-1,0)
+    ; print  "`t" resized.toString() "`n"
+    print "grow D (6 15)`n"
+    ; print "grow R ?`n"
+    resized :=  z.resize(test,0,0,0,1)
+
+    ; test := z.findByCode(48)
+    ; ; print "From " test.toString() "`n"
+    ; ; skrink L
+    ; ; print "skrink L : cannot`n"
+    ; resized := z.resize(test,1,0,0,0)
+    ; ; print  "`t" resized.toString() "`n"
+    ; ; skrink R
+    ; ; print "skrink R  : cannot `n"
+    ; resized := z.resize(test,0,-1,0,0)
+    ; ; print  "`t" resized.toString() "`n"
+    ; ; grow L
+    ; ; print "grow L  : can`n"
+    ; resized := z.resize(test,-1,0,0,0)
+    ; ; print "`t"  resized.toString() "`n"
+    ; ; grow R
+    ; ; print "grow R  : cannot`n"
+    ; resized :=  z.resize(test,0,1,0,0)
+    ; ; print  "`t" resized.toString() "`n"
+
+
+    test := z.findByCode(1015)
+    ; print "From " test.toString() "`n"
+    print "skrink U (14 15)`n"
+    ; print "skrink L ?`n"
+    resized := z.resize(test,0,0,1,0)
+    ; print "`t" resized.toString() "`n"
+    print "skrink D (10 11)`n"
+    ; print "skrink R ?`n"
+    resized := z.resize(test,0,0,0,-1)
+    ; print  "`t" resized.toString() "`n"
+    print "grow U (6 15)`n"
+    ; print "grow L ?`n"
+    resized := z.resize(test,0,0,-1,0)
+    ; print  "`t" resized.toString() "`n"
+    print "grow D (Cannot)`n"
+    ; print "grow R ?`n"
+    resized :=  z.resize(test,0,0,0,1)
+
+    print "------------------------------------------`n"
+
+}
+
 
 
 #F11:: {

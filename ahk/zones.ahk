@@ -65,7 +65,7 @@ class Zones extends Array {
                         newZone := Zone(code, zoneStart, zoneStop, startCol, startRow, stopCol, stopRow, xAsInt, yAsInt, wAsInt, hAsInt)
                         this.Push(newZone)
 
-                        ; print zoneStart " "  zoneStop "`n"
+                        print zoneStart " " zoneStop "`n"
                     }
                 }
 
@@ -84,7 +84,7 @@ class Zones extends Array {
     availableZones(usedSlots) {
         available_zones := []
 
-        ; compute all available zones 
+        ; compute all available zones
         for startRow in range(1, this.rows) {
 
             for startCol in range(1, this.cols) {
@@ -92,7 +92,7 @@ class Zones extends Array {
                 startIndex := (startRow - 1) * this.cols + startCol
                 zoneStart := startIndex
 
-                if (usedSlots[startIndex] == 1 ) {
+                if (usedSlots[startIndex] == 1) {
                     ; print startCol "," startRow " used`n"
                     continue
                 }
@@ -104,7 +104,7 @@ class Zones extends Array {
                         stopIndex := (stopRow - 1) * this.cols + stopCol
                         zoneStop := stopIndex
 
-                        if (usedSlots[stopIndex] == 1 ) {
+                        if (usedSlots[stopIndex] == 1) {
                             ; print startCol "," startRow " used `n"
                             break
                         }
@@ -122,7 +122,7 @@ class Zones extends Array {
         }
         return available_zones
     }
-    
+
 
     debugZones(zones) {
         for zone in zones {
@@ -204,11 +204,138 @@ class Zones extends Array {
         return bestMatches
     }
 
+    distanceFromZone(tile) {
+        WinGetPosEx(&x, &y, &w, &h, tile.handle)
+
+        tileZone := tile.currentZone
+
+        centerDistance := tileZone.centerDistance(x, y, x + w, y + h)
+        startPosDistance := distance(x, y, tileZone.x, tileZone.y)
+        finalDistance := centerDistance + startPosDistance
+        ; print "Distance to " candidate.code " : "  finalDistance "`n"
+        return finalDistance
+    }
+
     findByName(name) {
 
     }
 
+    debugResize := true
+
+    debug(msg) {
+        ; if (this.debugResize == true)
+        print msg "`n"
+    }
+
+    growLeft(zone) {
+        return this.resize(zone, -1, 0, 0, 0)
+    }
+
+    growRight(zone) {
+        return this.resize(zone, 0, 1, 0, 0)
+    }
+
+    growUp(zone) {
+        return this.resize(zone, 0, 0, -1, 0)
+    }
+
+    growDown(zone) {
+        return this.resize(zone, 0, 0, 0, 1)
+    }
+
+    shrinkLeft(zone) {
+        return this.resize(zone, 1, 0, 0, 0)
+    }
+
+    shrinkRight(zone) {
+        return this.resize(zone, 0, -1, 0, 0)
+    }
+
+    shrinkUp(zone) {
+        return this.resize(zone, 0, 0, 1, 0)
+    }
+
+    shrinkDown(zone) {
+        return this.resize(zone, 0, 0, 0, -1)
+    }
+
+    moveRight(zone) {
+        return this.resize(zone, 1, 1, 0, 0)
+    }
+
+    resize(zone, xOffsetStart, xOffseStop, yOffsetStart, yOffsetStop) {
+        if (this.debugResize)
+            print "From " zone.toString() "`n"
+
+        ; shrink or grow left
+        startCol := zone.startCol + xOffsetStart
+
+        ; shrink or growright
+        stopCol := zone.stopCol + xOffseStop
+
+        ; shrink or grow up
+        startRow := zone.startRow + yOffsetStart
+
+        ; shrink or grow down
+        stopRow := zone.stopRow + yOffsetStop
+
+        if (startCol < 1) {
+            print "`tERROR: start col must be >= 1`n"
+            return zone
+        }
+
+        if (startCol > this.cols) {
+            print "`tERROR:  start col must be <= " this.cols "`n"
+            return zone
+        }
+
+        if (stopCol > this.rows) {
+            print "`tERROR:  stop col must be <= " this.rows "`n"
+            return zone
+        }
+
+        if (stopCol < 1) {
+            print "`tERROR: stop col must be >= 1 `n"
+            return zone
+        }
+
+        if (stopCol < startCol) {
+            print "`tERROR: stopCol must be <= startCol `n"
+            return zone
+        }
+
+        if (stopRow < startRow) {
+            print "`tERROR: stopRow must be <= startRow `n"
+            return zone
+        }
+
+        zoneStart := (startRow - 1) * this.cols + startCol
+        zoneStop := (stopRow - 1) * this.cols + stopCol
+
+        if (zoneStop >= 10) {
+            code := (zoneStart * 100) + zoneStop
+        } else {
+            code := (zoneStart * 10) + zoneStop
+        }
+
+        ; print "From :`t start " zone.startCol " "  zone.startRow  " stop " zone.stopCol " " zone.stopRow "`n"
+
+        resizedZone := this.findByCode(code)
+
+        if ( ! IsObject(resizedZone) ) {
+            print "ERROR !  resize result not found " code "`n"
+            return zone
+        }
+
+        if (this.debugResize )
+            print "To   " resizedZone.toString() "`n"
+
+        return resizedZone
+    }
+
+
 }
+
 
 class Zone {
 
@@ -229,26 +356,10 @@ class Zone {
         this.y := y
         this.w := w
         this.h := h
+        this.cols := (this.stopCol - this.startCol + 1)
+        this.rows := (this.stopRow - this.startRow + 1)
+        this.size := this.cols * this.rows
     }
-
-
-    cols() {
-        return (this.stopCol - this.startCol + 1)
-    }
-
-    rows() {
-        return (this.stopRow - this.startRow + 1)
-    }
-
-
-    size() {
-        return this.cols() * this.rows()
-    }
-
-    colWidth() {
-        return this.stopCol - this.startCol + 1 
-    }
-
 
     centerDistance(x1, y1, x2, y2) {
         otherCenterX := (x1 + x2) // 2
@@ -266,7 +377,7 @@ class Zone {
 
 
     toString() {
-        return this.name " " this.code " " this.cols() "x" this.rows() " (" this.x "," this.y " " this.w "x" this.h " ) " this.startCol "," this.stopCol " x " this.startRow "," this.stopRow " size " this.size() " center " this.centerX() "," this.centerY()
+        return this.name " " this.code " " this.cols "x" this.rows " (" this.x "," this.y " " this.w "x" this.h " ) " this.startCol "," this.stopCol " x " this.startRow "," this.stopRow " size " this.size " center " this.centerX() "," this.centerY()
     }
 
 }

@@ -79,6 +79,16 @@ distance(X1, y1, x2, y2) {
     return Sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)))
 }
 
+indexOf(array, value) {
+
+    for candidate in array {
+        if (candidate == value) {
+            return A_Index
+        }
+    }
+    return -1
+}
+
 ; move window and fix offset from invisible border
 WinMoveEx(x?, y?, w?, h?, hwnd?) {
     if !(hwnd is integer)
