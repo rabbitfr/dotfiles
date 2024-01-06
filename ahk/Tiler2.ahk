@@ -1,6 +1,45 @@
 print "Loading Tiler2.ahk`n"
 #Include zones.ahk
 
+class Command {
+
+    __New(action,arg, target) {
+        this.action := action
+        this.arg := arg
+        this.target := target
+        this.done := false
+        this.undone := false
+    }
+
+    do(tiler) {
+
+        if ( this.done ) {
+            print "Cannot do same action twice"
+            return 
+        }
+
+        if ( this.action == "snap" ) {
+            this.previousArea := tiler.tiles.findByHandle(this.target).currentZone.code
+            tiler.tiles.snapTo(this.arg, this.target)
+            this.done := true
+            this.undone := false
+        }
+    }
+
+    undo(tiler) {
+        if ( this.undone ) {
+            print "Cannot undo same action twice"
+            return 
+        }
+        if ( this.action == "snap" ) {
+            print "Undo action "
+            tiler.tiles.snapTo(this.previousArea, this.target)
+            this.done := false
+            this.undone := true
+        }
+    }
+}
+
 class Tiler2 {
 
     __New() {
@@ -17,7 +56,23 @@ class Tiler2 {
     }
 
     snap(areaCode, handle := WinGetId("A")) {
-        this.tiles.snapTo(areaCode, handle)
+        action := Command("snap", areaCode,  handle)
+        action.do(this)
+
+        this.lastCommand := action
+        ; this.tiles.snapTo(areaCode, handle)
+    }
+
+    undo() {
+        this.lastCommand.undo(this)
+    }
+    
+    redo() {
+        this.lastCommand.do(this)
+    }
+
+    switch() {
+        
     }
 
     modLeft(handle := WinGetId("A")) {
@@ -27,6 +82,8 @@ class Tiler2 {
     modRight(handle := WinGetId("A")) {
         this.tiles.modRight(handle)
     }
+
+    
 }
 
 

@@ -9,7 +9,14 @@
 ;
 
 ; vim like 
-#u:: tiler.snap(TLC) ;
+#u:: {
+    ; if (A_PriorHotkey == "#u" and A_TimeSincePriorHotkey < 300) {
+    ;     print "x2`n"
+    ;     tiler.snap(TL) ;
+    ; } else {
+        tiler.snap(TLC) ;
+    ; }
+}    
 #i:: tiler.snap(CT) ;
 #o:: tiler.snap(TRC) 
 
@@ -33,13 +40,17 @@
 #numpad1:: tiler.snap(BLC) ;
 #numpad2:: tiler.snap(CB) ; 
 #numpad3:: tiler.snap(BRC) 
-
+    
 ;
 ; Enlarge, Contract base on current state
 ;
 
 #Left:: tiler.modLeft()
 #Right:: tiler.modRight()
+
+;
+#z:: tiler.undo()
+#+z:: tiler.redo()
 
 ; #F2:: {
 ;     best := z.findMatches()
@@ -60,9 +71,26 @@
     print "------------------------------------------`n"
     ; test := z.findByShape(2,2)
     test := z.findBySize(1)
+    
+    index := 1
 
-    for t in test
-        print t.toString() "`n"
+    for t in test {
+        print "Zone" index -1  "=" t.x "," t.y "," t.x + t.w "," t.y + t.h ",`n"
+        index++
+    }
+
+    test2 := []
+    test2.Push(z.findByCode(C))
+    test2.Push(z.findByCode(LS))
+    test2.Push(z.findByCode(RS))
+    test2.Push(z.findByCode(L3))
+    test2.Push(z.findByCode(R3))
+
+    for t in test2 {
+        print "Zone" index -1  "=" t.x "," t.y "," t.x + t.w "," t.y + t.h ",`n"
+        index++
+    }
+
     print "------------------------------------------`n"
     z.debugZones(test)
 }
