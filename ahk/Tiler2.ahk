@@ -175,11 +175,10 @@ class Tiles extends Array {
             ; expand
             case C: this.snapTo(L3, handle)
             case RS: this.snapTo(C, handle)
-            ; unexpand
-            case R3: this.snapTo(C, handle)
-            ; glue and unexpand
-            case L3: 
-             
+                ; unexpand
+                ; case R3: this.snapTo(C, handle)
+                ;     ; glue and unexpand
+            case L3:
                 onTheRight := this.tilesRightOf(tile)
                 for h in onTheRight {
                     right := this.findByHandle(h)
@@ -191,19 +190,49 @@ class Tiles extends Array {
 
                 }
                 this.snapTo(LS, handle)
-            
-            ; swap
+
+                ; swap
             case LS: this.snapTo(RS, handle)
         }
     }
+
+
+    modRight(handle := WinGetId("A")) {
+        tile := this.findByHandle(handle)
+
+        switch tile.currentZone.code {
+            ; expand
+            case C: this.snapTo(R3, handle)
+            case LS: this.snapTo(L3, handle)
+                ; unexpand
+            case L3: this.snapTo(C, handle)
+                ; glue and unexpand
+            case R3:
+                onTheLeft := this.tilesLeftOf(tile)
+                for h in onTheLeft {
+                    left := this.findByHandle(h)
+                    print "Growing right " left.toString()
+                    ; print "onTheRight " right.toString() "`n"
+                    newZone := this.growRight(left)
+                    ; print "new zone : " newZone.toString() "`n"
+                    this.snapTo(newZone.code, h)
+                    left.currentZone := newZone
+
+                }
+                this.snapTo(RS, handle)
+                ; swap
+            case RS: this.snapTo(LS, handle)
+        }
+    }
+
 
     growLeft(tile) {
         ; print "grow left " area.name " " area.area
 
         zone := tile.currentZone
 
-        newZoneStart := zone.zoneStart - 1 
-        newZoneStop := zone.zoneStop 
+        newZoneStart := zone.zoneStart - 1
+        newZoneStop := zone.zoneStop
 
         if (newZoneStop >= 10) {
             code := (newZoneStart * 100) + newZoneStop
@@ -212,33 +241,45 @@ class Tiles extends Array {
         }
 
         newZone := this.zones.findByCode(code)
-
-        print "Grow " zone.code " to " newZone.code
+        print "New zone ? " newZone.code
+        print "Grow left :" zone.code " to " newZone.code
 
         return newZone
     }
 
-    modRight(handle := WinGetId("A")) {
-        tile := this.findByHandle(handle)
+    growRight(tile) {
 
-        switch tile.currentZone.code {
-            ; expand
-            case C: this.snapTo(R3, handle)
-            case R3: this.snapTo(RS, handle)
-            case LS: this.snapTo(L3, handle)
-            ; unexpand
-            case L3: this.snapTo(C, handle)
-            ; swap
-            case RS: this.snapTo(LS, handle)
+        zone := tile.currentZone
+
+        print "grow right " zone.zoneStart " " zone.zoneStop "`n"
+
+        newZoneStart := zone.zoneStart
+        newZoneStop := zone.zoneStop + 1
+
+        if (newZoneStop >= 10) {
+            code := (newZoneStart * 100) + newZoneStop
+        } else {
+            code := (newZoneStart * 10) + newZoneStop
         }
+
+        print "Getting zone " code "`n"
+        newZone := this.zones.findByCode(code)
+
+        print "New zone ? " newZone.code "`n"
+        print "Grow right :" zone.code " to " newZone.code "`n"
+
+        return newZone
     }
 
-    
+
     tilesRightOf(tile) {
-     
+
         tilesOnTheRight := []
-    
+
         for candidate in this {
+            if (candidate.currentZone.code ~= "-1|9000|0|116")
+                continue
+
 
             if (candidate.currentZone.startCol > tile.currentZone.stopCol) {
                 tilesOnTheRight.Push(candidate.handle)
@@ -246,6 +287,23 @@ class Tiles extends Array {
         }
 
         return tilesOnTheRight
+    }
+
+    tilesLeftOf(tile) {
+
+        tilesOnTheLeft := []
+
+        for candidate in this {
+            if (candidate.currentZone.code ~= "-1|9000|0|116")
+                continue
+
+            if (candidate.currentZone.startCol < tile.currentZone.startCol
+                and candidate.currentZone.stopCol < tile.currentZone.startCol) {
+                    tilesOnTheLeft.Push(candidate.handle)
+            }
+        }
+
+        return tilesOnTheLeft
     }
 
 
