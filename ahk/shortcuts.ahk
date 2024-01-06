@@ -1,5 +1,14 @@
 
 
+#Enter::Run("wt.exe")
+#d::Send("^{Space}")
+#w::Send("!{F4}")
+
+;
+; Direct move & resize shortcuts
+;
+
+; vim like 
 #u:: tiler.snap(TLC) ;
 #i:: tiler.snap(CT) ;
 #o:: tiler.snap(TRC) 
@@ -12,7 +21,7 @@
 #,:: tiler.snap(CB) ; 
 #.:: tiler.snap(BRC)
 
-
+; same but on keypad 
 #numpad7:: tiler.snap(TLC) ;
 #numpad8:: tiler.snap(CT) ;
 #numpad9:: tiler.snap(TRC) 
@@ -23,7 +32,14 @@
 
 #numpad1:: tiler.snap(BLC) ;
 #numpad2:: tiler.snap(CB) ; 
-#numpad3:: tiler.snap(BRC)
+#numpad3:: tiler.snap(BRC) 
+
+;
+; Enlarge, Contract base on current state
+;
+
+#Left:: tiler.modLeft()
+#Right:: tiler.modRight()
 
 ; #F2:: {
 ;     best := z.findMatches()

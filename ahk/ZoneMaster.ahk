@@ -75,7 +75,7 @@ onEvent(eventId, eventHandle, msg, ignore) {
             HSHELL_RUDEAPPACTIVATED_BIS: ; 32772
             print "> WIN RUDEAPPACTIVATED, " eventHandle
             tiler.update()
-            ; print "updateActiveWindow WIN RUDEAPPACTIVATED"
+            ; print "updateActiveWindow WIN RUDEAPPACTIVATED"55
             ; wm.updateActiveWindow()
     }
 }

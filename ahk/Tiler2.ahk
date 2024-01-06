@@ -5,9 +5,6 @@ class Tiler2 {
 
     __New() {
         this.zones := Zones()
-
-        ; for key,val in namedZones
-        ;     print key "`n"
         this.tiles := Tiles(this.zones)
     }
 
@@ -21,6 +18,14 @@ class Tiler2 {
 
     snap(areaCode, handle := WinGetId("A")) {
         this.tiles.snapTo(areaCode, handle)
+    }
+
+    modLeft(handle := WinGetId("A")) {
+        this.tiles.modLeft(handle)
+    }
+
+    modRight(handle := WinGetId("A")) {
+        this.tiles.modRight(handle)
     }
 }
 
@@ -100,68 +105,41 @@ class Tiles extends Array {
             freeZones := this.freeZones()
 
             ; custom behaviors
-            if ( this.isZoneUsed(C)) {
-                print "Custom C "
+            placed := this.tryToPlacecOnePreferred(C, newHandle, this.preferredNewTilesC)
 
-                for zone in this.preferredNewTilesC {
+            if (!placed)
+                placed := this.tryToPlacecOnePreferred(R3, newHandle, this.preferredNewTilesR3)
+            if (!placed)
+                placed := this.tryToPlacecOnePreferred(L3, newHandle, this.preferredNewTilesL3)
+            if (!placed)
+                placed := this.tryToPlacecOnePreferred(LS, newHandle, this.preferredNewTilesLS)
+            if (!placed)
+                placed := this.tryToPlacecOnePreferred(RS, newHandle, this.preferredNewTilesRS)
 
-                    if ( this.isZoneUsed(zone) == 0 ) {
-                        this.snapTo(zone, newHandle)
-                        return
-                    }
-                }
-             } else if ( this.isZoneUsed(L3)) {
-                print "Custom C "
 
-                for zone in this.preferredNewTilesL3 {
-
-                    if ( this.isZoneUsed(zone) == 0 ) {
-                        this.snapTo(zone, newHandle)
-                        return
-                    }
-                }
-             } else if ( this.isZoneUsed(R3)) {
-                print "Custom C "
-
-                for zone in this.preferredNewTilesR3 {
-
-                    if ( this.isZoneUsed(zone) == 0 ) {
-                        this.snapTo(zone, newHandle)
-                        return
-                    }
-                }
-             }
-             else if ( this.isZoneUsed(LS)) {
-                print "Custom C "
-
-                for zone in this.preferredNewTilesLS {
-
-                    if ( this.isZoneUsed(zone) == 0 ) {
-                        this.snapTo(zone, newHandle)
-                        return
-                    }
-                }
-             }
-             else if ( this.isZoneUsed(RS)) {
-                print "Custom RS "
-
-                for zone in this.preferredNewTilesRS {
-
-                    if ( this.isZoneUsed(zone) == 0 ) {
-                        this.snapTo(zone, newHandle)
-                        return
-                    }
-                }
-             }
-
+            if (!placed) {
+                ;  use preferred using existing process ?
+            }
         }
     }
 
-    preferredNewTilesC := [ TRC, BRC, TLC, BLC ]
+    tryToPlacecOnePreferred(mainZone, newHandle, preferred) {
+        if (this.isZoneUsed(mainZone)) {
+            for zone in preferred {
+                if (this.isZoneUsed(zone) == 0) {
+                    this.snapTo(zone, newHandle)
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    preferredNewTilesC := [TRC, BRC, TLC, BLC]
     preferredNewTilesL3 := [TRC, BRC,]
-    preferredNewTilesR3 := [ TLC, BLC ]
-    preferredNewTilesLS := [ TR, BR ]
-    preferredNewTilesRS := [ TL, BL ]
+    preferredNewTilesR3 := [TLC, BLC]
+    preferredNewTilesLS := [TR, BR]
+    preferredNewTilesRS := [TL, BL]
 
     freeZones() {
         usedSlots := []
@@ -173,12 +151,12 @@ class Tiles extends Array {
 
             zone := tile.currentZone
 
-            if (zone.code == 00 or zone.code == -1 )
+            if (zone.code == 00 or zone.code == -1)
                 continue
 
             for row in range(zone.startRow, zone.stopRow) {
                 for col in range(zone.startCol, zone.stopCol) {
-                    usedIndex := (row -1 ) * this.zones.cols + col 
+                    usedIndex := (row - 1) * this.zones.cols + col
                     usedSlots[usedIndex] := 1
                 }
             }
@@ -189,8 +167,90 @@ class Tiles extends Array {
         return available_zones
     }
 
+    modLeft(handle := WinGetId("A")) {
+
+        tile := this.findByHandle(handle)
+
+        switch tile.currentZone.code {
+            ; expand
+            case C: this.snapTo(L3, handle)
+            case RS: this.snapTo(C, handle)
+            ; unexpand
+            case R3: this.snapTo(C, handle)
+            ; glue and unexpand
+            case L3: 
+             
+                onTheRight := this.tilesRightOf(tile)
+                for h in onTheRight {
+                    right := this.findByHandle(h)
+                    ; print "onTheRight " right.toString() "`n"
+                    newZone := this.growLeft(right)
+                    ; print "new zone : " newZone.toString() "`n"
+                    this.snapTo(newZone.code, h)
+                    right.currentZone := newZone
+
+                }
+                this.snapTo(LS, handle)
+            
+            ; swap
+            case LS: this.snapTo(RS, handle)
+        }
+    }
+
+    growLeft(tile) {
+        ; print "grow left " area.name " " area.area
+
+        zone := tile.currentZone
+
+        newZoneStart := zone.zoneStart - 1 
+        newZoneStop := zone.zoneStop 
+
+        if (newZoneStop >= 10) {
+            code := (newZoneStart * 100) + newZoneStop
+        } else {
+            code := (newZoneStart * 10) + newZoneStop
+        }
+
+        newZone := this.zones.findByCode(code)
+
+        print "Grow " zone.code " to " newZone.code
+
+        return newZone
+    }
+
+    modRight(handle := WinGetId("A")) {
+        tile := this.findByHandle(handle)
+
+        switch tile.currentZone.code {
+            ; expand
+            case C: this.snapTo(R3, handle)
+            case R3: this.snapTo(RS, handle)
+            case LS: this.snapTo(L3, handle)
+            ; unexpand
+            case L3: this.snapTo(C, handle)
+            ; swap
+            case RS: this.snapTo(LS, handle)
+        }
+    }
+
+    
+    tilesRightOf(tile) {
+     
+        tilesOnTheRight := []
+    
+        for candidate in this {
+
+            if (candidate.currentZone.startCol > tile.currentZone.stopCol) {
+                tilesOnTheRight.Push(candidate.handle)
+            }
+        }
+
+        return tilesOnTheRight
+    }
+
+
     isEmpty(exclude := "") {
-       
+
         for tile in this {
             if (tile.handle ~= exclude) {
                 continue
@@ -227,7 +287,7 @@ class Tiles extends Array {
     }
 
     isZoneUsed(zone) {
-       return this.findByZone(zone).Length > 0
+        return this.findByZone(zone).Length > 0
     }
 
     findByZone(zone) {

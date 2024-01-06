@@ -231,6 +231,7 @@ class Zone {
         this.h := h
     }
 
+
     cols() {
         return (this.stopCol - this.startCol + 1)
     }
