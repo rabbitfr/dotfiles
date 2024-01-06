@@ -203,7 +203,19 @@ class Tiles extends Array {
         switch tile.currentZone.code {
             ; expand
             case C: this.snapTo(R3, handle)
-            case LS: this.snapTo(L3, handle)
+            case LS: 
+                onTheRight := this.tilesRightOf(tile)
+                print "onTheRight : " onTheRight.Length
+                for h in onTheRight {
+                    right := this.findByHandle(h)
+                    ; print "onTheRight " right.toString() "`n"
+                    newZone := this.shrinkLeft(right)
+                    ; print "new zone : " newZone.toString() "`n"
+                    this.snapTo(newZone.code, h)
+                    right.currentZone := newZone
+
+                }
+                this.snapTo(L3, handle)
                 ; unexpand
             case L3: this.snapTo(C, handle)
                 ; glue and unexpand
@@ -211,8 +223,8 @@ class Tiles extends Array {
                 onTheLeft := this.tilesLeftOf(tile)
                 for h in onTheLeft {
                     left := this.findByHandle(h)
-                    print "Growing right " left.toString()
-                    ; print "onTheRight " right.toString() "`n"
+                    ; print "Growing right " left.toString()
+                    ; ; print "onTheRight " right.toString() "`n"
                     newZone := this.growRight(left)
                     ; print "new zone : " newZone.toString() "`n"
                     this.snapTo(newZone.code, h)
@@ -241,8 +253,33 @@ class Tiles extends Array {
         }
 
         newZone := this.zones.findByCode(code)
-        print "New zone ? " newZone.code
-        print "Grow left :" zone.code " to " newZone.code
+        ; print "New zone ? " newZone.code
+        ; print "Grow left :" zone.code " to " newZone.code
+
+        return newZone
+    }
+
+    
+    shrinkLeft(tile) {
+        print "shrinkLeft " tile.currentZone.code " colWidth "  tile.currentZone.colWidth()
+
+        if ( tile.currentZone.colWidth() < 2) 
+            return 
+
+        zone := tile.currentZone
+
+        newZoneStart := zone.zoneStart + 1
+        newZoneStop := zone.zoneStop
+
+        if (newZoneStop >= 10) {
+            code := (newZoneStart * 100) + newZoneStop
+        } else {
+            code := (newZoneStart * 10) + newZoneStop
+        }
+
+        newZone := this.zones.findByCode(code)
+        ; print "New zone ? " newZone.code
+        ; print "Grow left :" zone.code " to " newZone.code
 
         return newZone
     }
@@ -251,7 +288,7 @@ class Tiles extends Array {
 
         zone := tile.currentZone
 
-        print "grow right " zone.zoneStart " " zone.zoneStop "`n"
+        ; print "grow right " zone.zoneStart " " zone.zoneStop "`n"
 
         newZoneStart := zone.zoneStart
         newZoneStop := zone.zoneStop + 1
@@ -262,11 +299,11 @@ class Tiles extends Array {
             code := (newZoneStart * 10) + newZoneStop
         }
 
-        print "Getting zone " code "`n"
+        ; print "Getting zone " code "`n"
         newZone := this.zones.findByCode(code)
 
-        print "New zone ? " newZone.code "`n"
-        print "Grow right :" zone.code " to " newZone.code "`n"
+        ; print "New zone ? " newZone.code "`n"
+        ; print "Grow right :" zone.code " to " newZone.code "`n"
 
         return newZone
     }
@@ -277,13 +314,15 @@ class Tiles extends Array {
         tilesOnTheRight := []
 
         for candidate in this {
-            if (candidate.currentZone.code ~= "-1|9000|0|116")
+            if (candidate.currentZone.code == -1
+                or candidate.currentZone.code == 9000
+                or candidate.currentZone.code ==  0
+                or candidate.currentZone.code == 116)
                 continue
-
 
             if (candidate.currentZone.startCol > tile.currentZone.stopCol) {
                 tilesOnTheRight.Push(candidate.handle)
-            }
+            } 
         }
 
         return tilesOnTheRight

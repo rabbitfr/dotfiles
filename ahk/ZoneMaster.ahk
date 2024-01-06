@@ -129,7 +129,7 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
 
     ; }
 
-    ; } else {
+    ; } else {0
     ; return
     ; }
 

@@ -245,6 +245,10 @@ class Zone {
         return this.cols() * this.rows()
     }
 
+    colWidth() {
+        return this.stopCol - this.startCol + 1 
+    }
+
 
     centerDistance(x1, y1, x2, y2) {
         otherCenterX := (x1 + x2) // 2
