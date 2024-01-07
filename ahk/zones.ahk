@@ -123,6 +123,93 @@ class Zones extends Array {
         return available_zones
     }
 
+    ; Right - left ?
+    fitToZone(zone, zoneToFitIn) {
+        ; if (this.isInside(zone, zoneToFitIn)) {
+        ;     ; nothing to do
+        ;     ; print "Zone " zone.code " is  inside " zoneToFitIn.code "`n"
+        ;     return zone
+        ; } else {
+
+            startColOffset := zoneToFitIn.startCol - zone.startCol
+            stopColOffset := zoneToFitIn.stopCol - zone.stopCol
+            startRowffset := zoneToFitIn.startRow - zone.startRow
+            stopRowffset := zoneToFitIn.stopRow - zone.stopRow
+
+            newStartCol := zone.startCol + startColOffset
+            newStopCol := zone.stopCol + stopColOffset
+
+            newZoneStart := (zone.startRow - 1) * this.cols + newStartCol
+            newZoneStop := (zone.stopRow - 1) * this.cols + newStopCol
+
+            if (newZoneStop >= 10) {
+                code := (newZoneStart * 100) + newZoneStop
+            } else {
+                code := (newZoneStart * 10) + newZoneStop
+            }
+
+            ; print "Zone " zone.code " resized to " code "`n"
+            resizedToFit := this.findByCode(code)
+            return resizedToFit
+        ; }
+
+    }
+
+    ; ; Right - left ?
+    ; expandToZone(zone, zoneToExpandIn) {
+
+       
+    ;     startColOffset := zoneToExpandIn.startCol - zone.startCol
+    ;     stopColOffset := zoneToExpandIn.stopCol - zone.stopCol
+    ;     startRowffset := zoneToExpandIn.startRow - zone.startRow
+    ;     stopRowffset := zoneToExpandIn.stopRow - zone.stopRow
+
+    ;     print "startColOffset " startColOffset " stopColOffset " stopColOffset " startRowffset " startRowffset " stopRowffset " stopRowffset "`n"
+
+    ;     newStartCol := zone.startCol + startColOffset
+    ;     newStopCol := zone.stopCol + stopColOffset
+
+    ;     newZoneStart := (zone.startRow - 1) * this.cols + newStartCol
+    ;     newZoneStop := (zone.stopRow - 1) * this.cols + newStopCol
+
+    ;     if (newZoneStop >= 10) {
+    ;         code := (newZoneStart * 100) + newZoneStop
+    ;     } else {
+    ;         code := (newZoneStart * 10) + newZoneStop
+    ;     }
+
+    ;     print "Zone " zone.code " resized to " code "`n"
+    ;     resizedToFit := this.findByCode(code)
+    ;     return resizedToFit
+    ; }
+
+    isInside(zone, outerZone) {
+        return zone.startCol >= outerZone.startCol and
+            zone.stopCol <= outerZone.stopCol and
+            zone.startRow >= outerZone.startRow and
+            zone.stopRow <= outerZone.stopRow
+    }
+
+    zoneRightOf(zone) {
+        startCol := zone.stopCol + 1
+        stopCol := this.cols
+
+        startRow := zone.startRow
+        stopRow := zone.stopRow
+
+        zoneStart := (startRow - 1) * this.cols + startCol
+        zoneStop := (stopRow - 1) * this.cols + stopCol
+
+        if (zoneStop >= 10) {
+            code := (zoneStart * 100) + zoneStop
+        } else {
+            code := (zoneStart * 10) + zoneStop
+        }
+
+        ; print "zoneRightOf " zone.code " " code "`n"
+        zoneRightOf := this.findByCode(code)
+        return zoneRightOf
+    }
 
     debugZones(zones) {
         for zone in zones {
@@ -133,7 +220,6 @@ class Zones extends Array {
             ; WinGetPosEx(&x,&y,&w,&h,debugGuiHandle)
             ; print zone.toString() "`n"
             ; print "real x " x " y " y " w " w " h" h
-
         }
     }
 
@@ -141,8 +227,8 @@ class Zones extends Array {
         for zone in this {
             if (zone.code == code)
                 return zone
-
         }
+        return ""
     }
 
     findByShape(cols, rows) {
@@ -220,7 +306,7 @@ class Zones extends Array {
 
     }
 
-    debugResize := true
+    debugResize := false
 
     debug(msg) {
         ; if (this.debugResize == true)
@@ -322,12 +408,12 @@ class Zones extends Array {
 
         resizedZone := this.findByCode(code)
 
-        if ( ! IsObject(resizedZone) ) {
+        if (!IsObject(resizedZone)) {
             print "ERROR !  resize result not found " code "`n"
             return zone
         }
 
-        if (this.debugResize )
+        if (this.debugResize)
             print "To   " resizedZone.toString() "`n"
 
         return resizedZone

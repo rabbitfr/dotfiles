@@ -245,6 +245,33 @@ class Tiler2 {
 
 }
 
+class PositionHistory extends Array {
+
+    add(zone) {
+        existingZone := this.indexOf(zone)
+
+        ; keep zone ordered by time 
+        if ( existingZone != -1) {
+            this.RemoveAt(existingZone)
+        }
+
+        this.Push(zone)
+    }
+
+    lastInZone() {
+        
+    }
+
+        
+    indexOf(array, zone) {
+        for position in this {
+            if (position.code == zone.code) {
+                return A_Index
+            }
+        }
+        return -1
+    }
+}
 
 class Tiles extends Array {
 
@@ -405,9 +432,11 @@ class Tiles extends Array {
                 for h in onTheLeft {
                     left := this.findByHandle(h)
                     newZone := this.zones.shrinkRight(left.currentZone)
-                    commands.Push(MoveCommand(newZone.code, h))
 
+                    if ( newZone.code != left.currentZone.code ) ; avoid altSnap
+                        commands.Push(MoveCommand(newZone.code, h))
                 }
+
                 commands.Push(MoveCommand(R3, handle))
             case R3:
                 commands.Push(MoveCommand(C, handle))
@@ -415,14 +444,25 @@ class Tiles extends Array {
                 ; case R3: this.snapTo(C, handle)
                 ;     ; glue and unexpand
             case L3:
-                onTheRight := this.tilesRightOf(tile)
+                nextZone := this.zones.findByCode(LS)
+                zoneOnTheRight := this.zones.zoneRightOf(nextZone)
+                tilesOnTheRight := this.tilesRightOf(tile)
 
-                for h in onTheRight {
-                    right := this.findByHandle(h)
-                    newZone := this.zones.growLeft(right.currentZone)
-                    commands.Push(MoveCommand(newZone.code, h))
+                ; onTheRight := this.tilesRightOf(tile)
+
+                print "-- expand --`n"
+                for h in tilesOnTheRight {
+
+                    candidate := this.findByHandle(h)
+                    newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight) 
+
+                    ; right := this.findByHandle(h)
+                    ; newZone := this.zones.growLeft(right.currentZone)
+                    if ( newZone.code != candidate.currentZone.code ) ; avoid altSnap
+                         commands.Push(MoveCommand(newZone.code, h))
 
                 }
+                print "-- expand --`n"
                 commands.Push(MoveCommand(LS, handle))
                 ; swap
             case LS:
@@ -443,32 +483,26 @@ class Tiles extends Array {
 
     modRight(handle := WinGetId("A")) {
         tile := this.findByHandle(handle)
-
-
         commands := []
-
 
         switch tile.currentZone.code {
             ; expand
             case C:
                 commands.Push(MoveCommand(R3, handle))
             case LS:
-                onTheRight := this.tilesRightOf(tile)
+                nextZone := this.zones.findByCode(L3)
+                zoneOnTheRight := this.zones.zoneRightOf(nextZone)
+                tilesOnTheRight := this.tilesRightOf(tile)
 
-                for h in onTheRight {
-                    right := this.findByHandle(h)
-                    print "`t " right.toString()
-
-                    if (right.currentZone.cols == 2) {
-                        newZone := this.zones.shrinkLeft(right.currentZone)
-                    } else if (right.currentZone.cols == 1) {
-                        newZone := this.zones.moveRight(right.currentZone)
-
-                    }
-                    commands.Push(MoveCommand(newZone.code, h))
+                for h in tilesOnTheRight {
+                   
+                    candidate := this.findByHandle(h)
+                    newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight) 
+                   
+                    if ( newZone.code != candidate.currentZone.code ) ; avoid altSnap
+                          commands.Push(MoveCommand(newZone.code, h))
                 }
                 commands.Push(MoveCommand(L3, handle))
-
                 ; unexpand
             case L3:
                 commands.Push(MoveCommand(C, handle))
@@ -616,7 +650,11 @@ class Tiles extends Array {
 
         return newZone
     }
-
+    
+    ; zoneRightOf(tile) {
+    ;     tileZone := tile.currentZone 
+    ;     return this.zones.zoneRightOf(tileZone)
+    ; }
 
     tilesRightOf(tile) {
 
@@ -687,8 +725,11 @@ class Tiles extends Array {
     }
 
     snapTo(zoneId, handle := WinGetId("A")) {
+        ; print "Tiles.snapTo zoneId " zoneId "`n"
         tile := this.findByHandle(handle)
+        ; print "Tiles.snapTo tile " tile.handle "`n"
         zone := this.zones.findByCode(zoneId)
+        ; print "Tiles.snapTo zone " zone.code "`n"
         tile.snapTo(zone)
     }
 
@@ -871,7 +912,7 @@ class MoveCommand {
             print "Cannot do same action twice`n"
             return
         }
-        print "Do MoveCommand : " this.target " to " this.zone "`n"
+        ; print "Do MoveCommand : " this.target " to " this.zone "`n"
         this.previousArea := tiler.tiles.findByHandle(this.target).currentZone.code
         tiler.tiles.snapTo(this.zone, this.target)
 

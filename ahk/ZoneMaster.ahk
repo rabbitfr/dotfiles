@@ -114,11 +114,13 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
 
     ; if ( tiler.tiles.Has(hWnd) ) {5
 
-    if (WinGetClass(hWnd) != "AltSnap") {
-        ; print "> WIN MOVED, " hWnd " " WinGetTitle(hWnd) " " WinGetClass(hWnd)
-        ; print WinGetTitle(hWnd)
+    if (WinExist(hWnd)) {
+        if (WinGetClass(hWnd) != "AltSnap") {
+            ; print "> WIN MOVED, " hWnd " " WinGetTitle(hWnd) " " WinGetClass(hWnd)
+            ; print WinGetTitle(hWnd)
 
-        tiler.update()
+            tiler.update()
+        }
     }
 
     ; lastMovedEventHandle := hWnd
@@ -142,8 +144,8 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
     ; else if (Event = 2)
     ;     Message := "EVENT_SYSTEM_ALERT"
     ; else if (Event = 3)
-    ;     Message := "EVENT_SYSTEM_FOREGROUND"  
-    ; else if (Event = 4)
+    ;     Message := "EVENT_SYSTEM_FOREGROUND"
+    ; else if (Event = 4)•4
     ;     Message := "EVENT_SYSTEM_MENUSTART"
     ; else if (Event = 5)
     ;     Message := "EVENT_SYSTEM_MENUEND"

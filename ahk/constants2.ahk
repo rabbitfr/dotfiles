@@ -42,7 +42,7 @@ global LS := 114
 global RS := 316
 ; ..34
 ; ..78
-global L3 := 1150
+global L3 := 115
 ; 123.
 ; 567.
 global R3 := 216
