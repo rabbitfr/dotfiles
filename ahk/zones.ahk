@@ -65,7 +65,7 @@ class Zones extends Array {
                         newZone := Zone(code, zoneStart, zoneStop, startCol, startRow, stopCol, stopRow, xAsInt, yAsInt, wAsInt, hAsInt)
                         this.Push(newZone)
 
-                        print zoneStart " " zoneStop "`n"
+                        ; print zoneStart " " zoneStop "`n"
                     }
                 }
 

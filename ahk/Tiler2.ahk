@@ -2,7 +2,6 @@ print "Loading Tiler2.ahk`n"
 #Include zones.ahk
 
 
-
 class Tiler2 {
 
     ; move to state class
@@ -59,7 +58,7 @@ class Tiler2 {
 
     }
 
-    
+
     tabsSnapshots := []
     previousHighlight := -1
 
@@ -70,7 +69,7 @@ class Tiler2 {
         try {
 
             if (this.tabsSnapshots.Length == 0) {
-                this.tabsSnapshots :=  AltTabWindows()
+                this.tabsSnapshots := AltTabWindows()
                 this.previousHighligh := -1
             }
 
@@ -138,13 +137,12 @@ class Tiler2 {
     }
 
 
-
     modLeft(handle := WinGetId("A")) {
-            commands := this.tiles.modLeft(handle)
+        commands := this.tiles.modLeft(handle)
 
-            for command in commands {
-                command.do(this)
-            }
+        for command in commands {
+            command.do(this)
+        }
     }
 
     modRight(handle := WinGetId("A")) {
@@ -156,13 +154,13 @@ class Tiler2 {
         ;         command.undo(this)
         ;     }
         ; } else {
-            commands := this.tiles.modRight(handle)
+        commands := this.tiles.modRight(handle)
 
-            for command in commands {
-                command.do(this)
-            }
+        for command in commands {
+            command.do(this)
+        }
 
-            ; this.commandHistory.Push(CommandLog(commands, handle, "modLeft"))
+        ; this.commandHistory.Push(CommandLog(commands, handle, "modLeft"))
         ; }
     }
 
@@ -186,19 +184,19 @@ class Tiler2 {
     }
 
     nextInStack(handle := WinGetId("A")) {
-        ; on veut dans l'ordre de alt tab 
+        ; on veut dans l'ordre de alt tab
 
-        ; next := this.tiles.nextInZone(handle) 
+        ; next := this.tiles.nextInZone(handle)
 
         ; if ( IsObject(next))
         ;     next.activate()
-        ; current := this.tiles.findByHandle(handle) 
+        ; current := this.tiles.findByHandle(handle)
 
-        
+
         ; inStack := this.tiles.findByZone(current.currentZone.code) ; replace all with a tilesList and next() prev() ?
 
         ; if ( inStack.Length <= 1 )
-        ;     return 
+        ;     return
 
         ; print "Apps in same area : " inStack.Length
 
@@ -208,8 +206,8 @@ class Tiler2 {
 
         ; next := currentIndex + 1
 
-        ; print "next " next 
-     
+        ; print "next " next
+
         ; if (next > inStack.Length) {
         ;     next := 1
         ; }
@@ -224,7 +222,7 @@ class Tiler2 {
         ; inStack := this.tiles.findByZone(current.currentZone.code)
 
         ; if ( inStack.Length <= 1 )
-        ;     return 
+        ;     return
 
         ; print "Apps in same area : " inStack.Length
 
@@ -234,13 +232,21 @@ class Tiler2 {
 
         ; previous := currentIndex - 1
 
-        ; print "previous " previous 
-     
+        ; print "previous " previous
+
         ; if (previous < 1) {
         ;     previous :=  inStack.Length
         ; }
 
         ; inStack[currentIndex].activate()
+    }
+
+    scratchPad() {
+        this.tiles.toggleScratchPad()
+    }
+
+    addToScratchPad(handle := WinGetId("A")) {
+        this.tiles.addToScratchPad(handle)
     }
 
 }
@@ -250,20 +256,18 @@ class PositionHistory extends Array {
     add(zone) {
         existingZone := this.indexOf(zone)
 
-        ; keep zone ordered by time 
-        if ( existingZone != -1) {
+        ; keep zone ordered by time
+        if (existingZone != -1) {
+            print "Updated zone " zone.code " in history timeline to latest `n"
             this.RemoveAt(existingZone)
+            this.Push(zone)
+        } else {
+            print "Added new zone " zone.code " to history `n"
+            this.Push(zone)
         }
-
-        this.Push(zone)
     }
 
-    lastInZone() {
-        
-    }
-
-        
-    indexOf(array, zone) {
+    indexOf(zone) {
         for position in this {
             if (position.code == zone.code) {
                 return A_Index
@@ -280,6 +284,7 @@ class Tiles extends Array {
     __New(zones) {
         this.zones := zones
         this.update()
+        this.scratchPad := false
     }
 
     update() {
@@ -290,13 +295,20 @@ class Tiles extends Array {
         ; Removing closed apps
         ;
         for existingTile in this {
-            exists := WinExist(existingTile.handle)
+            
+            if ( existingTile.inScratchPad and existingTile.isHidden) {
+                ; tile still exists but is hidden
+            } else {
+                exists := WinExist(existingTile.handle)
 
-            if (!exists) {
-                print "Tile destroyed, removing " existingTile.handle "`n"
-                index := this.indexOf(existingTile.handle)
-                this.RemoveAt(index)
-            }
+                if (!exists) {
+                    print "Tile destroyed, removing " existingTile.handle "`n"
+                    index := this.indexOf(existingTile.handle)
+                    this.RemoveAt(index)
+                }
+
+            }  
+           
         }
 
         created := []
@@ -325,9 +337,14 @@ class Tiles extends Array {
             if (existingIndex != -1) {
 
                 existingTile := this[existingIndex]
-                existingTile.currentZone := matchedZone
-                this[existingIndex] := existingTile
-                ; print "Updated index " existingIndex ", to " this[existingIndex].toString()
+
+                if (existingTile.currentZone.code != matchedZone.code) {
+                    existingTile.currentZone := matchedZone
+                    ; existingTile.history.add(existingTile.currentZone)
+                    this[existingIndex] := existingTile
+                    ; print "Updated index " existingIndex ", to " this[existingIndex].toString()
+                }
+
 
             } else {
                 newTile := Tile(handle, process, matchedZone, class, state, this)
@@ -416,6 +433,107 @@ class Tiles extends Array {
         return available_zones
     }
 
+    ; hideAll() {
+    ;     for tile in this {
+    ;         tile.hide()
+    ;     }
+    ; }
+
+    ; minimizeAll() {
+    ;     for tile in this {
+    ;         if (tile.isNotMinimized()) {
+
+    ;         }
+    ;     }
+    ; }
+
+    ; restoreAllFromScratchPad() {
+    ;     for tile in this {
+    ;         if (tile.isHiddenFromScratchPad())
+    ;             tile.showAftercScratchPad()
+    ;     }
+    ; }
+
+
+    ; minimizeAllForScratchPad() {
+    ;     for tile in this {
+    ;         tile.hideForScratchPad()
+    ;     }
+    ; }
+
+    ; true is any windows has status -2 SCRATCHPAD_HIDDEN
+    hasTilesInScratchpad() {
+        for tile in this {
+            if (tile.isInScratchPad())
+                return true
+        }
+        return false
+    }
+
+    ; scratchPadShown() {
+    ;     for tile in this {
+    ;         if (!tile.isInScratchPad()) {
+    ;             if (tile.isHidden())
+    ;                 return true
+    ;         }
+    ;     }
+    ;     return false
+    ; }
+
+    toggleScratchPad() {
+      
+        if ( this.scratchPad ) {
+            print "SCRATCHPAD on. toggling off `n"
+      
+            ; show all tiles not in scratchpad
+            for tile in this {
+                if (!tile.isInScratchPad()) {
+                    tile.show()
+                }
+            }
+
+            ; hide all tiles in scratchpad
+            for tile in this {
+                if (tile.isInScratchPad()) {
+                    tile.hide()
+                }
+            }
+            this.scratchPad := false
+        } else {
+            print "SCRATCHPAD off. toggling on`n"
+            ; hide all tiles not in scratchpad
+            for tile in this {
+                if (!tile.isInScratchPad()) {
+                    tile.hide()
+                }
+            }
+
+            ; hide all tiles in scratchpad
+            for tile in this {
+                if (tile.isInScratchPad()) {
+                    tile.show()
+                }
+            }
+
+            this.scratchPad := true
+        }
+    }
+
+    addToScratchPad(handle) {
+        print "addToScratchPad " handle "`n"
+        toAdd := this.findByHandle(handle)
+        print "addToScratchPad " toAdd.toString() "`n"
+
+        if ( toAdd.isInScratchPad()) {
+            print "removeFromScratchPad "  "`n"
+
+            toAdd.removeFromScratchPad()
+        } else {
+            print "addToScratchPad "  "`n"
+            toAdd.addToScratchPad()
+        }
+    }
+
     modLeft(handle := WinGetId("A")) {
 
         tile := this.findByHandle(handle)
@@ -433,7 +551,7 @@ class Tiles extends Array {
                     left := this.findByHandle(h)
                     newZone := this.zones.shrinkRight(left.currentZone)
 
-                    if ( newZone.code != left.currentZone.code ) ; avoid altSnap
+                    if (newZone.code != left.currentZone.code) ; avoid altSnap
                         commands.Push(MoveCommand(newZone.code, h))
                 }
 
@@ -448,21 +566,37 @@ class Tiles extends Array {
                 zoneOnTheRight := this.zones.zoneRightOf(nextZone)
                 tilesOnTheRight := this.tilesRightOf(tile)
 
-                ; onTheRight := this.tilesRightOf(tile)
-
-                print "-- expand --`n"
                 for h in tilesOnTheRight {
 
                     candidate := this.findByHandle(h)
-                    newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight) 
 
-                    ; right := this.findByHandle(h)
-                    ; newZone := this.zones.growLeft(right.currentZone)
-                    if ( newZone.code != candidate.currentZone.code ) ; avoid altSnap
-                         commands.Push(MoveCommand(newZone.code, h))
+                    ; reverse search
+                    lastKnownFit := -1
+                    for olderZone in candidate.history {
+                        ; ; ignore current zone
+                        ; if (olderZone.code == candidate.currentZone.code)
+                        ;     continue
 
+                        inside := this.zones.isInside(olderZone, zoneOnTheRight)
+                        ; print "`t History " olderZone.code ", isInside " inside
+                        if (inside == 1)
+                            lastKnownFit := olderZone
+                    }
+
+                    if (lastKnownFit != -1) {
+                        print "`t Using last known position which fits new area : " lastKnownFit.code
+                        newZone := lastKnownFit
+                    } else {
+                        newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight)
+                    }
+
+                    if (newZone.code != candidate.currentZone.code) {
+                        commands.Push(MoveCommand(newZone.code, h))
+                    }
+
+                    candidate.history.add(candidate.currentZone)
                 }
-                print "-- expand --`n"
+
                 commands.Push(MoveCommand(LS, handle))
                 ; swap
             case LS:
@@ -495,12 +629,12 @@ class Tiles extends Array {
                 tilesOnTheRight := this.tilesRightOf(tile)
 
                 for h in tilesOnTheRight {
-                   
+
                     candidate := this.findByHandle(h)
-                    newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight) 
-                   
-                    if ( newZone.code != candidate.currentZone.code ) ; avoid altSnap
-                          commands.Push(MoveCommand(newZone.code, h))
+                    newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight)
+
+                    if (newZone.code != candidate.currentZone.code) ; avoid altSnap
+                        commands.Push(MoveCommand(newZone.code, h))
                 }
                 commands.Push(MoveCommand(L3, handle))
                 ; unexpand
@@ -650,11 +784,6 @@ class Tiles extends Array {
 
         return newZone
     }
-    
-    ; zoneRightOf(tile) {
-    ;     tileZone := tile.currentZone 
-    ;     return this.zones.zoneRightOf(tileZone)
-    ; }
 
     tilesRightOf(tile) {
 
@@ -749,7 +878,7 @@ class Tiles extends Array {
         ;         tiles.Push(tile)
         ; }
 
-        ; if (tiles.Length == 1) 
+        ; if (tiles.Length == 1)
         ;     return
 
         ; nextIndex := currentIndex + 1
@@ -791,22 +920,28 @@ class Tiles extends Array {
 
 class Tile {
 
-    __New(handle, process, zone, class, state, tiler) {
+    __New(handle, process, zone, class, state, tiler, inScratchPad := false) {
         this.handle := handle
         this.process := process
         this.currentZone := zone
         this.class := class
         this.state := state
         this.tiler := tiler
+        this.history := PositionHistory()
+        ; this.history.add(this.currentZone)
+        this.inScratchPad := inScratchPad
     }
 
-    snapTo(zone) {
+
+    snapTo(zone, altSnap := false) {
         print "snap to " zone.code "(current " this.currentZone.code ")"
 
         ; switch to next mod if available : same shortcut with another mod key on double press
-        if (!this.tiler.disableAltArea) {
-            if (zone.code == this.currentZone.code) {
-                zone := this.altArea(zone)
+        if (altSnap) {
+            if (!this.tiler.disableAltArea) {
+                if (zone.code == this.currentZone.code) {
+                    zone := this.altArea(zone)
+                }
             }
         }
 
@@ -814,12 +949,18 @@ class Tile {
         this.currentZone := zone
     }
 
+    ; will snap without triggering the altsnap feature
+    internalSnapTo(zone) {
+        this.snapTo(zone, false)
+    }
+
+
     getSiblingsOnArea() {
         siblings := []
 
         for tile in this.tiler {
             if (tile.handle != this.handle and tile.currentZone.code == this.currentZone.code) {
-            ; if (tile.currentZone.code == this.currentZone.code) {
+                ; if (tile.currentZone.code == this.currentZone.code) {
                 siblings.Push(tile.handle)
             }
         }
@@ -873,7 +1014,6 @@ class Tile {
         DrawBorder(this.handle, border_color, 1)
     }
 
-    
 
     highlight() {
         DrawBorder(this.handle, this.yellow_color, 1)
@@ -883,17 +1023,66 @@ class Tile {
         DrawBorder(this.handle, this.green_color, 1)
     }
 
-    
+    isNotMinimized() {
+        return this.state != -1
+    }
+
+    isVisible() {
+        WinExist("ahk_id " this.handle) != 0
+
+    }
+
+    isHidden() {
+        WinExist("ahk_id " this.handle) == 0
+    }
+    ;
+    ; ScratchPad Stuff
+    ;
+
+    isInScratchPad() {
+        return this.inScratchPad
+    }
+
+    addToScratchPad() {
+        if (!this.isInScratchPad()) {
+            print "SCRATCH   ADD " this.toString() "`n"
+            this.hide()
+            this.inScratchPad := true
+        }
+    }
+
+    removeFromScratchPad() {
+        if (this.isInScratchPad()) {
+            print "SCRATCH   REMOVE " this.toString() "`n"
+            this.hide()
+            this.inScratchPad := false
+        }
+    }
+
+    show() {
+        WinShow(this.handle)
+    }
+
+    hide() {
+        WinHide(this.handle)
+    }
+
     activate() {
         WinActivate(this.handle)
     }
 
+    minimize() {
+        WinMinimize(this.handle)
+    }
+
+    restore() {
+        WinRestore(this.handle)
+    }
 
     toString() {
         return padEnd(this.handle, 10, " ") " " padEnd(this.process, 20, " ") " " this.currentZone.name " " this.class
     }
 }
-
 
 
 class MoveCommand {

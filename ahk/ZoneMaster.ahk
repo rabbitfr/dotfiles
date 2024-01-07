@@ -66,7 +66,7 @@ onEvent(eventId, eventHandle, msg, ignore) {
         case HSHELL_WINDOWCREATED: ; 1
             print "> WIN CREATED " eventHandle
             tiler.update()
-            ; tiler.onNewWindow(eventHandle)
+            ; tiler.o   nNewWindow(eventHandle)
         case HSHELL_WINDOWDESTROYED: ; 2
             print "> WIN DESTROYED " eventHandle
             tiler.update()
@@ -114,14 +114,14 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
 
     ; if ( tiler.tiles.Has(hWnd) ) {5
 
-    if (WinExist(hWnd)) {
+    ; if (WinExist(hWnd)) {
         if (WinGetClass(hWnd) != "AltSnap") {
             ; print "> WIN MOVED, " hWnd " " WinGetTitle(hWnd) " " WinGetClass(hWnd)
             ; print WinGetTitle(hWnd)
 
             tiler.update()
         }
-    }
+    ; }
 
     ; lastMovedEventHandle := hWnd
 

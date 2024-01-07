@@ -3,6 +3,8 @@
 #Enter::Run("wt.exe")
 #d::Send("^{Space}")
 #w::Send("!{F4}")
+#`::tiler.scratchPad()
+#+`::tiler.addToScratchPad()
 
 ;
 ; Win alt tab override
