@@ -1,4 +1,3 @@
-
 class Tiles extends Array {
 
     disableAltArea := false
@@ -17,8 +16,8 @@ class Tiles extends Array {
         ; Removing closed apps
         ;
         for existingTile in this {
-            
-            if ( existingTile.inScratchPad and existingTile.isHidden) {
+
+            if (existingTile.inScratchPad and existingTile.isHidden) {
                 ; tile still exists but is hidden
             } else {
                 exists := WinExist(existingTile.handle)
@@ -29,8 +28,8 @@ class Tiles extends Array {
                     this.RemoveAt(index)
                 }
 
-            }  
-           
+            }
+
         }
 
         created := []
@@ -155,34 +154,6 @@ class Tiles extends Array {
         return available_zones
     }
 
-    ; hideAll() {
-    ;     for tile in this {
-    ;         tile.hide()
-    ;     }
-    ; }
-
-    ; minimizeAll() {
-    ;     for tile in this {
-    ;         if (tile.isNotMinimized()) {
-
-    ;         }
-    ;     }
-    ; }
-
-    ; restoreAllFromScratchPad() {
-    ;     for tile in this {
-    ;         if (tile.isHiddenFromScratchPad())
-    ;             tile.showAftercScratchPad()
-    ;     }
-    ; }
-
-
-    ; minimizeAllForScratchPad() {
-    ;     for tile in this {
-    ;         tile.hideForScratchPad()
-    ;     }
-    ; }
-
     ; true is any windows has status -2 SCRATCHPAD_HIDDEN
     hasTilesInScratchpad() {
         for tile in this {
@@ -192,21 +163,11 @@ class Tiles extends Array {
         return false
     }
 
-    ; scratchPadShown() {
-    ;     for tile in this {
-    ;         if (!tile.isInScratchPad()) {
-    ;             if (tile.isHidden())
-    ;                 return true
-    ;         }
-    ;     }
-    ;     return false
-    ; }
-
     toggleScratchPad() {
-      
-        if ( this.scratchPad ) {
-            print "SCRATCHPAD on. toggling off `n"
-      
+
+        if (this.scratchPad) {
+            ; print "SCRATCHPAD on. toggling off `n"
+
             ; show all tiles not in scratchpad
             for tile in this {
                 if (!tile.isInScratchPad()) {
@@ -222,7 +183,7 @@ class Tiles extends Array {
             }
             this.scratchPad := false
         } else {
-            print "SCRATCHPAD off. toggling on`n"
+            ; print "SCRATCHPAD off. toggling on`n"
             ; hide all tiles not in scratchpad
             for tile in this {
                 if (!tile.isInScratchPad()) {
@@ -242,16 +203,11 @@ class Tiles extends Array {
     }
 
     addToScratchPad(handle) {
-        print "addToScratchPad " handle "`n"
         toAdd := this.findByHandle(handle)
-        print "addToScratchPad " toAdd.toString() "`n"
 
-        if ( toAdd.isInScratchPad()) {
-            print "removeFromScratchPad "  "`n"
-
+        if (toAdd.isInScratchPad()) {
             toAdd.removeFromScratchPad()
         } else {
-            print "addToScratchPad "  "`n"
             toAdd.addToScratchPad()
         }
     }
@@ -284,39 +240,38 @@ class Tiles extends Array {
                 ; case R3: this.snapTo(C, handle)
                 ;     ; glue and unexpand
             case L3:
+                currentZone := this.zones.findByCode(L3)
+                currentZoneOnTheRight := this.zones.zoneRightOf(currentZone)
                 nextZone := this.zones.findByCode(LS)
-                zoneOnTheRight := this.zones.zoneRightOf(nextZone)
+                nextZoneOnTheRight := this.zones.zoneRightOf(nextZone)
+
                 tilesOnTheRight := this.tilesRightOf(tile)
 
                 for h in tilesOnTheRight {
 
                     candidate := this.findByHandle(h)
 
-                    ; reverse search
-                    lastKnownFit := -1
-                    for olderZone in candidate.history {
-                        ; ; ignore current zone
-                        ; if (olderZone.code == candidate.currentZone.code)
-                        ;     continue
+                    lastKnowPosition := candidate.history.findLastKnonwPosition(nextZoneOnTheRight)
 
-                        inside := this.zones.isInside(olderZone, zoneOnTheRight)
-                        ; print "`t History " olderZone.code ", isInside " inside
-                        if (inside == 1)
-                            lastKnownFit := olderZone
-                    }
-
-                    if (lastKnownFit != -1) {
-                        print "`t Using last known position which fits new area : " lastKnownFit.code
-                        newZone := lastKnownFit
+                    if (lastKnowPosition != -1) {
+                        print "`t Last known position in this area : " lastKnowPosition.code "`n"
+                        newZone := lastKnowPosition
                     } else {
-                        newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight)
+                        newZone := this.zones.fitToZone(candidate.currentZone, nextZoneOnTheRight)
+
+                        ; Tile zone has been updated by the expand/contract of another tile
+                        ; store previous position in given zone to eventually restore if needed
+
+                        candidate.history.add(currentZoneOnTheRight, candidate.currentZone)
                     }
 
-                    if (newZone.code != candidate.currentZone.code) {
-                        commands.Push(MoveCommand(newZone.code, h))
-                    }
+                    ; if (newZone.code != candidate.currentZone.code) {
+                    commands.Push(MoveCommand(newZone.code, h))
 
-                    candidate.history.add(candidate.currentZone)
+
+                    ; }
+
+                    ; candidate.history.add(candidate.currentZone)
                 }
 
                 commands.Push(MoveCommand(LS, handle))
@@ -346,18 +301,26 @@ class Tiles extends Array {
             case C:
                 commands.Push(MoveCommand(R3, handle))
             case LS:
+                currentZone := this.zones.findByCode(LS)
                 nextZone := this.zones.findByCode(L3)
-                zoneOnTheRight := this.zones.zoneRightOf(nextZone)
+                currentZoneOnTheRight := this.zones.zoneRightOf(currentZone)
+                nextZoneOnTheRight := this.zones.zoneRightOf(nextZone)
                 tilesOnTheRight := this.tilesRightOf(tile)
 
                 for h in tilesOnTheRight {
 
                     candidate := this.findByHandle(h)
-                    newZone := this.zones.fitToZone(candidate.currentZone, zoneOnTheRight)
+                    newZone := this.zones.fitToZone(candidate.currentZone, nextZoneOnTheRight)
 
-                    if (newZone.code != candidate.currentZone.code) ; avoid altSnap
-                        commands.Push(MoveCommand(newZone.code, h))
+                    ; if (newZone.code != candidate.currentZone.code) { ; avoid altSnap
+                    commands.Push(MoveCommand(newZone.code, h))
+
+                    ; Tile zone has been updated by the expand/contract of another tile
+                    ; store previous position in given zone to eventually restore if needed
+
+                    candidate.history.add(currentZoneOnTheRight, candidate.currentZone)
                 }
+
                 commands.Push(MoveCommand(L3, handle))
                 ; unexpand
             case L3:

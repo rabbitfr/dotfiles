@@ -251,24 +251,59 @@ class TileManager {
 
 }
 
-class PositionHistory extends Array {
+class PositionHistory extends Map {
 
-    add(zone) {
-        existingZone := this.indexOf(zone)
+    debugHistory := false
+
+    add(outerZone, zone) {
+
+        if (this.Has(outerZone.code)) {
+            outerZoneHistory := this[outerZone.code]
+        } else {
+            outerZoneHistory := []
+        }
 
         ; keep zone ordered by time
-        if (existingZone != -1) {
-            print "Updated zone " zone.code " in history timeline to latest `n"
-            this.RemoveAt(existingZone)
-            this.Push(zone)
+        zoneIndex := this.indexOf(zone, outerZoneHistory)
+
+        if (zoneIndex != -1) {
+            outerZoneHistory.RemoveAt(zoneIndex)
+            outerZoneHistory.Push(zone)
+            print "Updated zone " zone.code " in history to last entry`n"
         } else {
-            print "Added new zone " zone.code " to history `n"
-            this.Push(zone)
+            outerZoneHistory.Push(zone)
+            print "Added pos " zone.code " to zone " outerZone.code " history `n"
         }
+
+        this[outerZone.code] := outerZoneHistory
+
+        if (this.debugHistory) {
+            for key, array in this {
+                print "OuterZone " key "`n"
+                for (pos in array) {
+                    print "  pos " pos.code "`n"
+                }
+            }
+        }
+
     }
 
-    indexOf(zone) {
-        for position in this {
+    findLastKnonwPosition(outerZone) {
+
+        if (this.Has(outerZone.code)) {
+            outerZoneHistory := this[outerZone.code]
+
+            last := outerZoneHistory.Length
+            return outerZoneHistory[last]
+
+        } else {
+            return -1
+        }
+
+    }
+
+    indexOf(zone, outerZoneHistory) {
+        for position in outerZoneHistory {
             if (position.code == zone.code) {
                 return A_Index
             }
@@ -276,8 +311,6 @@ class PositionHistory extends Array {
         return -1
     }
 }
-
-
 
 
 class MoveCommand {
