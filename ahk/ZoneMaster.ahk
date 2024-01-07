@@ -5,7 +5,9 @@ Persistent ; This script will not exit automatically, even though it has nothing
 
 #Include constants2.ahk
 #Include helpers.ahk
-#Include Tiler2.ahk
+#Include Tiles.ahk
+#Include Tile.ahk
+#Include Tiler.ahk
 #Include shortcuts.ahk
 ; #ErrorStdOut
 
@@ -16,8 +18,7 @@ KeyHistory 0
 DetectHiddenWindows false
 SetWinDelay(1)
 
-global tiler := Tiler2()
-
+global tiler := TileManager()
 
 ; TODO move elsewhere
 HookShellEvents

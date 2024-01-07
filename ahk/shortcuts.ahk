@@ -21,6 +21,10 @@ LWin & Tab:: {
     return
 } 
 
+;
+; Cycle in stack
+;
+
 
 #PgUp::  tiler.previousInStack()
 #PgDn::  tiler.nextInStack()
@@ -49,7 +53,7 @@ LWin & Tab:: {
 #,:: tiler.snap(CB) ; 
 #.:: tiler.snap(BRC)
 
-; same but on keypad 
+; same but on numpad 
 #numpad7:: tiler.snap(TLC) ;
 #numpad8:: tiler.snap(CT) ;
 #numpad9:: tiler.snap(TRC) 
@@ -70,9 +74,18 @@ LWin & Tab:: {
 #Right:: tiler.modRight()
 #Up:: tiler.modUp()
 #Down:: tiler.modDown()
+
 ;
+; Undo / Redo 
+;
+
 #z:: tiler.undo()
 #+z:: tiler.redo()
+
+
+;
+; Generate Alt-Snap slots config
+;
 
 ; #F2:: {
 ;     best := z.findMatches()

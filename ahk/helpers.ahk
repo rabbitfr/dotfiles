@@ -1,5 +1,5 @@
 print "Loading helpers.ahk`n"
-#Include constants2.ahk
+
 ;
 ; Log helpers
 ;
