@@ -221,7 +221,7 @@ class Tiles extends Array {
         switch tile.currentZone.code {
             ; expand
             case C:
-                commands.Push(MoveCommand(L3, handle))
+                commands.Push(MoveCommand(L3, handle, true))
             case RS:
                 onTheLeft := this.tilesLeftOf(tile)
 
@@ -230,12 +230,12 @@ class Tiles extends Array {
                     newZone := this.zones.shrinkRight(left.currentZone)
 
                     if (newZone.code != left.currentZone.code) ; avoid altSnap
-                        commands.Push(MoveCommand(newZone.code, h))
+                        commands.Push(MoveCommand(newZone.code, h, true))
                 }
 
-                commands.Push(MoveCommand(R3, handle))
+                commands.Push(MoveCommand(R3, handle, true))
             case R3:
-                commands.Push(MoveCommand(C, handle))
+                commands.Push(MoveCommand(C, handle, true))
                 ; unexpand
                 ; case R3: this.snapTo(C, handle)
                 ;     ; glue and unexpand
@@ -266,7 +266,7 @@ class Tiles extends Array {
                     }
 
                     ; if (newZone.code != candidate.currentZone.code) {
-                    commands.Push(MoveCommand(newZone.code, h))
+                    commands.Push(MoveCommand(newZone.code, h, true))
 
 
                     ; }
@@ -274,7 +274,7 @@ class Tiles extends Array {
                     ; candidate.history.add(candidate.currentZone)
                 }
 
-                commands.Push(MoveCommand(LS, handle))
+                commands.Push(MoveCommand(LS, handle, true))
                 ; swap
             case LS:
                 ; onTheLeft := this.tilesRightOf(tile)
@@ -285,7 +285,7 @@ class Tiles extends Array {
                 ;     commands.Push(MoveCommand(newZone.code, h))
 
                 ; }
-                commands.Push(MoveCommand(R3, handle))
+                commands.Push(MoveCommand(R3, handle, true))
         }
 
         return commands
@@ -299,7 +299,7 @@ class Tiles extends Array {
         switch tile.currentZone.code {
             ; expand
             case C:
-                commands.Push(MoveCommand(R3, handle))
+                commands.Push(MoveCommand(R3, handle, true))
             case LS:
                 currentZone := this.zones.findByCode(LS)
                 nextZone := this.zones.findByCode(L3)
@@ -313,7 +313,7 @@ class Tiles extends Array {
                     newZone := this.zones.fitToZone(candidate.currentZone, nextZoneOnTheRight)
 
                     ; if (newZone.code != candidate.currentZone.code) { ; avoid altSnap
-                    commands.Push(MoveCommand(newZone.code, h))
+                    commands.Push(MoveCommand(newZone.code, h, true))
 
                     ; Tile zone has been updated by the expand/contract of another tile
                     ; store previous position in given zone to eventually restore if needed
@@ -321,10 +321,10 @@ class Tiles extends Array {
                     candidate.history.add(currentZoneOnTheRight, candidate.currentZone)
                 }
 
-                commands.Push(MoveCommand(L3, handle))
+                commands.Push(MoveCommand(L3, handle, true))
                 ; unexpand
             case L3:
-                commands.Push(MoveCommand(C, handle))
+                commands.Push(MoveCommand(C, handle, true))
 
                 ; glue and unexpand
             case R3:
@@ -356,16 +356,16 @@ class Tiles extends Array {
         switch tile.currentZone.code {
             ; expand
             case TRC:
-                commands.Push(MoveCommand(R, handle))
+                commands.Push(MoveCommand(R, handle, true))
             case TLC:
-                commands.Push(MoveCommand(L, handle))
+                commands.Push(MoveCommand(L, handle, true))
             case TR:
-                commands.Push(MoveCommand(RS, handle))
+                commands.Push(MoveCommand(RS, handle, true))
             case TL:
-                commands.Push(MoveCommand(LS, handle))
+                commands.Push(MoveCommand(LS, handle, true))
             default:
                 newZone := this.zones.growDown(tile.currentZone)
-                commands.Push(MoveCommand(newZone.code, handle))
+                commands.Push(MoveCommand(newZone.code, handle, true))
         }
 
         return commands
@@ -380,20 +380,20 @@ class Tiles extends Array {
         switch tile.currentZone.code {
             ; expand
             case R:
-                commands.Push(MoveCommand(TRC, handle))
+                commands.Push(MoveCommand(TRC, handle, true))
             case L:
-                commands.Push(MoveCommand(TLC, handle))
+                commands.Push(MoveCommand(TLC, handle, true))
             case RS:
-                commands.Push(MoveCommand(TR, handle))
+                commands.Push(MoveCommand(TR, handle, true))
             case LS:
-                commands.Push(MoveCommand(TL, handle))
+                commands.Push(MoveCommand(TL, handle, true))
             case BLC:
-                commands.Push(MoveCommand(L, handle))
+                commands.Push(MoveCommand(L, handle, true))
             case BRC:
-                commands.Push(MoveCommand(R, handle))
+                commands.Push(MoveCommand(R, handle, true))
             default:
                 newZone := this.zones.growUp(tile.currentZone)
-                commands.Push(MoveCommand(newZone.code, handle))
+                commands.Push(MoveCommand(newZone.code, handle, true))
         }
 
         return commands
@@ -546,6 +546,16 @@ class Tiles extends Array {
         ; print "Tiles.snapTo zone " zone.code "`n"
         tile.snapTo(zone)
     }
+
+    internalSnapTo(zoneId, handle := WinGetId("A")) {
+        ; print "Tiles.snapTo zoneId " zoneId "`n"
+        tile := this.findByHandle(handle)
+        ; print "Tiles.snapTo tile " tile.handle "`n"
+        zone := this.zones.findByCode(zoneId)
+        ; print "Tiles.snapTo zone " zone.code "`n"
+        tile.internalSnapTo(zone)
+    }
+    
 
     isZoneUsed(zone) {
         return this.findByZone(zone).Length > 0

@@ -21,12 +21,13 @@ class TileManager {
         this.tiles.updateActiveWindow()
     }
 
-    snap(areaCode, handle := WinGetId("A")) {
-        action := MoveCommand(areaCode, handle)
+    snap(areaCode, handle := WinGetId("A"), internal := false) {
+        action := MoveCommand(areaCode, handle, internal)
         action.do(this)
         this.commandHistory.Push(CommandLog(action, handle, "none"))
         ; this.tiles.snapTo(areaCode, handle)
     }
+
 
     undo() {
         ; last := this.lastCommand()
@@ -288,6 +289,10 @@ class PositionHistory extends Map {
 
     }
 
+    clear() {
+
+    }
+
     findLastKnonwPosition(outerZone) {
 
         if (this.Has(outerZone.code)) {
@@ -315,12 +320,13 @@ class PositionHistory extends Map {
 
 class MoveCommand {
 
-    __New(zone, target) {
+    __New(zone, target, internal) {
 
         this.zone := zone
         this.target := target
         this.done := false
         this.undone := false
+        this.internal := internal
     }
 
     do(tiler) {
@@ -331,8 +337,13 @@ class MoveCommand {
         }
         ; print "Do MoveCommand : " this.target " to " this.zone "`n"
         this.previousArea := tiler.tiles.findByHandle(this.target).currentZone.code
-        tiler.tiles.snapTo(this.zone, this.target)
 
+        if ( this.internal) {
+        tiler.tiles.internalSnapTo(this.zone, this.target)
+    } else {
+            tiler.tiles.snapTo(this.zone, this.target)
+
+        }
         this.done := true
         this.undone := false
 
@@ -345,7 +356,7 @@ class MoveCommand {
         }
 
         print "Undo MoveCommand `n"
-        tiler.tiles.snapTo(this.previousArea, this.target)
+        tiler.tiles.internalSnapTo(this.previousArea, this.target)
         this.done := false
         this.undone := true
     }

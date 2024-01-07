@@ -13,7 +13,7 @@ class Tile {
     }
 
 
-    snapTo(zone, altSnap := false) {
+    snapTo(zone, altSnap := true, clearHistory := true) {
         print "snap to " zone.code "(current " this.currentZone.code ")"
 
         ; switch to next mod if available : same shortcut with another mod key on double press
@@ -27,11 +27,17 @@ class Tile {
 
         WinMoveEx zone.x, zone.y, zone.w, zone.h, this.handle
         this.currentZone := zone
+
+        if ( clearHistory ) {
+            print "Clearing position history"
+            this.history := PositionHistory()
+        }
+
     }
 
     ; will snap without triggering the altsnap feature
     internalSnapTo(zone) {
-        this.snapTo(zone, false)
+        this.snapTo(zone, false, false)
     }
 
 
