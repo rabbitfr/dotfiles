@@ -2,12 +2,33 @@ print "Loading Zones.ahk`n"
 
 class Zones extends Array {
 
+    
+
     __New(cols := 4, rows := 4, margin := 0, spacing := 0) {
         this.cols := cols
         this.rows := rows
         this.margin := margin
         this.spacing := spacing ;  // 2 ; counted double ?
         this.init()
+
+        ; move to zones
+        H_MAIN_CYCLE := [LS, L3, C, R3, RS]
+        H_TOP_CYCLE := [TLC, TL, CT, TR, TRC]
+        H_BOTTOM_CYCLE := [BLC, BL, CB, BR, BRC]
+   
+
+        this.H_CYCLES := [H_MAIN_CYCLE, H_TOP_CYCLE, H_BOTTOM_CYCLE]
+
+        ; move to zones 
+        V_RC_CYCLE := [TRC, R, BRC]
+        V_C_CYCLE := [CB, C, CT]
+        V_LC_CYCLE := [TLC, L, BLC]
+        V_R_CYCLE := [TR, RS, BR]
+        V_L_CYCLE := [TL, LS, BL]
+
+        this.V_CYCLES := [V_RC_CYCLE, V_C_CYCLE, V_LC_CYCLE, V_R_CYCLE, V_L_CYCLE]
+
+
     }
 
     init() {
@@ -123,6 +144,29 @@ class Zones extends Array {
         return available_zones
     }
 
+    shiftToZone(zone, zoneToFitIn) {
+        startColOffset := zoneToFitIn.startCol - zone.startCol
+        stopColOffset := zoneToFitIn.stopCol - zone.stopCol
+        startRowffset := zoneToFitIn.startRow - zone.startRow
+        stopRowffset := zoneToFitIn.stopRow - zone.stopRow
+
+        newStartCol := zoneToFitIn.startCol + startColOffset
+        newStopCol := newStartCol + zone.cols - 1
+
+        newZoneStart := (zone.startRow - 1) * this.cols + newStartCol
+        newZoneStop := (zone.stopRow - 1) * this.cols + newStopCol
+
+        if (newZoneStop >= 10) {
+            code := (newZoneStart * 100) + newZoneStop
+        } else {
+            code := (newZoneStart * 10) + newZoneStop
+        }
+
+        ; print "Zone " zone.code " resized to " code "`n"
+        resizedToFit := this.findByCode(code)
+        return resizedToFit
+    ; }
+    }
     ; Right - left ?
     fitToZone(zone, zoneToFitIn) {
         ; if (this.isInside(zone, zoneToFitIn)) {
@@ -154,6 +198,8 @@ class Zones extends Array {
         ; }
 
     }
+
+    
 
     ; ; Right - left ?
     ; expandToZone(zone, zoneToExpandIn) {
@@ -288,6 +334,82 @@ class Zones extends Array {
         }
 
         return bestMatches
+    }
+
+    ; generic prev/next in array 
+    previousInHorizontalCycle(tile) {
+        cycle := this.findHorizontalCycle(tile)
+        indexInCycle := this.indexOf(tile, cycle)
+        previous := indexInCycle - 1
+
+        if ( previous == 0 )
+            previous := cycle.Length
+
+        return this.findByCode(cycle[previous])
+    }
+
+    nextInHorizontalCycle(tile) {
+        cycle := this.findHorizontalCycle(tile)
+        indexInCycle := this.indexOf(tile, cycle)
+        next := indexInCycle + 1
+
+        if ( next > cycle.Length )
+            next := 1
+
+        return this.findByCode(cycle[next])
+    }
+
+    findHorizontalCycle(tile) {
+        ; should check for doublon
+        for array in this.H_CYCLES {
+            for zone in array {
+                if (zone == tile.currentZone.code)
+                    return array
+            }
+        }
+        return []
+    }
+
+    previousInVerticalCycle(tile) {
+        cycle := this.findVerticalCycle(tile)
+        indexInCycle := this.indexOf(tile, cycle)
+        previous := indexInCycle - 1
+
+        if ( previous == 0 )
+            previous := cycle.Length
+
+        return this.findByCode(cycle[previous])
+       }
+
+    nextInVerticalCycle(tile) {
+        cycle := this.findVerticalCycle(tile)
+        indexInCycle := this.indexOf(tile, cycle)
+        next := indexInCycle + 1
+
+        if ( next > cycle.Length )
+            next := 1
+
+        return this.findByCode(cycle[next])
+    }
+
+    findVerticalCycle(tile) {
+        ; should check for doublon
+        for array in this.V_CYCLES {
+            for zone in array {
+                if (zone == tile.currentZone.code)
+                    return array
+            }
+        }
+        return []
+    }
+
+
+    indexOf(tile, array) {
+        for candidate in array {
+            if (candidate == tile.currentZone.code)
+                return A_Index
+        }
+        return -1
     }
 
     distanceFromZone(tile) {

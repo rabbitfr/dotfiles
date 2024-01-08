@@ -97,11 +97,14 @@ global CBRC := 77
 ; ....
 ; ...8
 global FLOATING := 0
+
 global FULLSCREEN := 9000
+
 global MINIMIZED := -1
 
 
 global namedZones := Map()
+
 namedZones[L] := "L"
 namedZones[R] := "R"
 namedZones[C] := "C"

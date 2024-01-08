@@ -4,6 +4,7 @@
 Persistent ; This script will not exit automatically, even though it has nothing to do.
 
 #Include constants2.ahk
+#Include NameZones.ahk
 #Include helpers.ahk
 #Include Tiles.ahk
 #Include Tile.ahk
@@ -18,9 +19,13 @@ KeyHistory 0
 DetectHiddenWindows false
 SetWinDelay(1)
 
+; _C := 12
+; C := NamedZone("C", _C, FULLSCREEN, [])
+
+
 global tiler := TileManager()
 
-; TODO move elsewhere
+; TODO move elsewhere♦
 HookShellEvents
 
 HookShellEvents() {
@@ -116,12 +121,12 @@ CaptureWinEvent(hWinEventHook, Event, hWnd, idObject, idChild, dwEventThread, dw
     ; if ( tiler.tiles.Has(hWnd) ) {5
 
     ; if (WinExist(hWnd)) {
-        if (WinGetClass(hWnd) != "AltSnap") {
-            ; print "> WIN MOVED, " hWnd " " WinGetTitle(hWnd) " " WinGetClass(hWnd)
-            ; print WinGetTitle(hWnd)
+    if (WinGetClass(hWnd) != "AltSnap") {
+        ; print "> WIN MOVED, " hWnd " " WinGetTitle(hWnd) " " WinGetClass(hWnd)
+        ; print WinGetTitle(hWnd)
 
-            tiler.update()
-        }
+        tiler.update()
+    }
     ; }
 
     ; lastMovedEventHandle := hWnd

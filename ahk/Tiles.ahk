@@ -212,9 +212,17 @@ class Tiles extends Array {
         }
     }
 
+
+
+
     modLeft(handle := WinGetId("A")) {
 
+        ; testcommands := this.modLeft2(handle)
+
+        ; this.modLeft2(handle)
+        
         tile := this.findByHandle(handle)
+
 
         commands := []
 
@@ -285,14 +293,114 @@ class Tiles extends Array {
                 ;     commands.Push(MoveCommand(newZone.code, h))
 
                 ; }
-                commands.Push(MoveCommand(R3, handle, true))
+                commands.Push(MoveCommand(RS, handle, true))
         }
 
         return commands
     }
 
+    ; modLeft(handle := WinGetId("A")) {
+    ;     return this.mod(handle, "LEFT")
+    ; }
+
+    modRight2(handle := WinGetId("A")) {
+        return this.mod(handle, "RIGHT")
+    }
+
+    mod(handle, direction)  {
+
+        commands := []
+        
+        currentTile := this.findByHandle(handle)
+        
+        currentZone := this.zones.findByCode(currentTile.currentZone.code)
+
+        if ( direction == "RIGHT")
+              nextZone := this.zones.nextInHorizontalCycle(currentTile)
+        else if (direction == "LEFT")
+            nextZone := this.zones.previousInHorizontalCycle(currentTile) 
+
+        if (nextZone.startCol < currentZone.startCol ) {
+            print "SWAP`n"
+            ; tile will swap with other side tiles
+            zoneModified := nextZone
+       
+            ; tiles inside swap zone
+            tilesToSwap := []
+            for tile in this {
+                if ( this.zones.isInside(tile.currentZone, zoneModified))
+                    tilesToSwap.Push(tile)
+            }       
+
+            ; 
+            for tile in tilesToSwap {
+
+                xShift := tile.currentZone.startCol - nextZone.startCol
+
+                newStartCol := currentZone.startCol + xShift
+                newStopCol := newStartCol + tile.currentZone.cols - 1
+
+                newZoneStart := (tile.currentZone.startRow - 1) * this.zones.cols + newStartCol
+                newZoneStop := (tile.currentZone.stopRow - 1) * this.zones.cols + newStopCol
+        
+        
+                if (newZoneStop >= 10) {
+                    code := (newZoneStart * 100) + newZoneStop
+                } else {
+                    code := (newZoneStart * 10) + newZoneStop
+                }
+
+                commands.Push(MoveCommand(code, tile.handle, true))
+            }
+
+            print "Mod Right : next " nextZone.code ", swap zone " zoneModified.code "`n"
+
+        } else {
+            ; tile may modify tiles in this area
+            zoneModified := this.zones.zoneRightOf(currentZone)
+            zoneToFitTiles := this.zones.zoneRightOf(nextZone)
+            tilesOnTheRight := this.tilesRightOf(currentTile)
+
+            if (zoneModified.cols == 1) {
+                print "HIDE`n"
+                ; cannot resize tiles under 2 cols
+                ; grow over them without modification
+            }
+            else if (zoneModified.cols == 2) {
+                print "RESIZE`n"
+                ; resize tiles in zone to best fit
+                ; register position to get them back if needed
+                for h in tilesOnTheRight {
+
+                    candidate := this.findByHandle(h)
+                    newZone := this.zones.fitToZone(candidate.currentZone, zoneToFitTiles)
+
+                    ; if (newZone.code != candidate.currentZone.code) { ; avoid altSnap
+                    commands.Push(MoveCommand(newZone.code, h, true))
+
+                    ; Tile zone has been updated by the expand/contract of another tile
+                    ; store previous position in given zone to eventually restore if needed
+
+                    candidate.history.add(zoneModified, candidate.currentZone)
+                }
+
+                commands.Push(MoveCommand(currentZone.code, handle, true))
+            }  else if (zoneModified.cols == 2) {
+                print "NOT IMPLEMENTED`n"
+            }
+
+            
+            ; print "Mod Right : next " nextZone.code ", zoneModified " zoneModified.code ", zoneToFitTiles " zoneToFitTiles.code "`n"
+
+        }
+
+        commands.Push(MoveCommand(nextZone.code, handle, true))
+    
+        return commands
+    }
 
     modRight(handle := WinGetId("A")) {
+        testcommands := this.modRight2(handle)
         tile := this.findByHandle(handle)
         commands := []
 
@@ -344,7 +452,7 @@ class Tiles extends Array {
             case RS: this.snapTo(LS, handle)
         }
 
-        return commands
+        return testcommands
     }
 
     modDown(handle := WinGetId("A")) {
@@ -555,7 +663,7 @@ class Tiles extends Array {
         ; print "Tiles.snapTo zone " zone.code "`n"
         tile.internalSnapTo(zone)
     }
-    
+
 
     isZoneUsed(zone) {
         return this.findByZone(zone).Length > 0
